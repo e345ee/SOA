@@ -1,12 +1,9 @@
 package se.ifmo.ru.error.mappers;
 
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import se.ifmo.ru.dto.response.ErrorResponse;
 
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -17,10 +14,6 @@ public class UnexpectedExceptionMapper implements ExceptionMapper<Exception> {
     @Override
     public Response toResponse(Exception exception) {
         LOGGER.log(Level.SEVERE, "Unexpected request failure", exception);
-        ErrorResponse error = new ErrorResponse(500, "Internal server error", List.of());
-        return Response.status(500)
-                .type(MediaType.APPLICATION_JSON_TYPE)
-                .entity(error)
-                .build();
+        return ErrorResponses.build(Response.Status.INTERNAL_SERVER_ERROR, "Internal server error");
     }
 }

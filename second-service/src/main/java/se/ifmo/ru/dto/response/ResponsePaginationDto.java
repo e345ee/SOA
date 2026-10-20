@@ -6,6 +6,6 @@ public record ResponsePaginationDto<T>(List<T> content, Long page, Long size, lo
     public static <T> ResponsePaginationDto<T> ans(List<T> content, Long page, Long size, long totalElements) {
         int totalPages = (int) ((totalElements + size - 1) / size);
         return new ResponsePaginationDto<>(content, page, size, totalElements,
-                totalPages, page < totalPages, page > 1);
+                totalPages, page + 1 < totalPages, page > 0);
     }
 }

@@ -5,6 +5,6 @@ import se.ifmo.ru.dto.request.LocationDto;
 
 import java.util.Date;
 
-public record PersonResponseDto (Long id, @Valid Date birthDate, @Valid Double weight,
-                                 @Valid LocationDto locationDto){
+public record PersonResponseDto (Long id, @Valid Date birthday, @Valid Integer weight,
+                                 @Valid LocationDto location){
 }

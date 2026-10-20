@@ -55,8 +55,7 @@ public class TicketClient {
                 if (response.getStatus() == 400) {
                     throw new RuntimeException("переданы некорректные данные");
                 }
-
-                if (response.getStatus() != 200) {
+                if (response.getStatus() != 201) {
                     throw new WebApplicationException("Первый сервис вернул HTTP "
                             + response.getStatus(), Response.Status.BAD_GATEWAY);
                 }

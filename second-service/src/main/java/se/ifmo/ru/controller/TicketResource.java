@@ -2,15 +2,18 @@ package se.ifmo.ru.controller;
 
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.*;
 import lombok.Getter;
 import se.ifmo.ru.dto.request.SearchDto;
 import se.ifmo.ru.dto.request.TicketCreateDto;
 import se.ifmo.ru.dto.response.TicketResponseDto;
 import se.ifmo.ru.service.TicketService;
+
+import java.net.URI;
 
 @Path("/tickets")
 @Produces(MediaType.APPLICATION_JSON)
@@ -20,8 +23,9 @@ public class TicketResource {
     private TicketService ticketService;
 
     @GET
-    public Response getTickets(){
-        return Response.accepted().build();
+    public Response getTickets(@QueryParam("page") @DefaultValue("0") @Min(0) long page,
+            @QueryParam("size") @DefaultValue("20") @Min(1) @Max(100) int size) {
+        return Response.ok(ticketService.getTickets(page, size)).build();
     }
     @POST
     @Path("/search")
@@ -30,21 +34,22 @@ public class TicketResource {
     }
 
     @POST
-    public Response createTicket(@NotNull @Valid TicketCreateDto dto){
+    public Response createTicket(@NotNull @Valid TicketCreateDto dto, @Context UriInfo uriInfo){
         TicketResponseDto responseDto = ticketService.saveTicket(dto);
-        return Response.ok(responseDto).build();
+        URI location = uriInfo.getAbsolutePathBuilder().path(String.valueOf(responseDto.id())).build();
+        return Response.created(location).entity(responseDto).build();
     }
     @DELETE
     @Path("/{id}")
     public Response deleteTicket(@PathParam("id") Long ticketId){
         ticketService.deleteTicketById(ticketId);
-        return Response.accepted().build();
+        return Response.noContent().build();
     }
     @GET
     @Path("/{id}")
     public Response getTicketById(@PathParam("id") Long id){
         TicketResponseDto responseDto =  ticketService.findById(id);
-        return Response.accepted(responseDto).build();
+        return Response.ok(responseDto).build();
     }
 
     @PUT
@@ -58,20 +63,20 @@ public class TicketResource {
     @Path("/price/sum")
     public Response getPriceSum(){
         Double response = ticketService.getSum();
-        return Response.accepted(response).build();
+        return Response.ok(response).build();
     }
 
     @GET
     @Path("/price/average")
     public Response getPriceAvg(){
         Double response = ticketService.getAvg();
-        return Response.accepted(response).build();
+        return Response.ok(response).build();
     }
 
     @POST
     @Path("/count-by-person")
     public Response getCountByPerson(){
-        return Response.accepted().build();
+        return Response.ok().build();
     }
 
 }

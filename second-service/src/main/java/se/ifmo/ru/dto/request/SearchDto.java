@@ -11,7 +11,7 @@ import java.util.Map;
 @NoArgsConstructor
 public class SearchDto {
     private Map<String, Object> filter;
-    private Long page;
-    private Long size;
+    private Long page = 0L;
+    private Long size = 20L;
     private List<SortDto> sort;
 }

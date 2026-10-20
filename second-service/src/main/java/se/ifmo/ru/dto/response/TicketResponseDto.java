@@ -9,5 +9,5 @@ import se.ifmo.ru.enums.TicketType;
 import java.util.Date;
 
 public record TicketResponseDto (Long id, @Valid String name, @Valid CoordinatesDto coordinates, Date creationDate,
-                                 Float price, TicketType ticketType, PersonResponseDto person, Long eventId) {
+                                 Float price, TicketType type, PersonResponseDto person, Long eventId) {
 }

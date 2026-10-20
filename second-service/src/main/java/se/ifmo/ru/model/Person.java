@@ -18,7 +18,7 @@ public class Person {
     private Long id;
 
     @NotNull
-    private Date birthDate;
+    private Date birthday;
 
     @NotNull
     @Positive

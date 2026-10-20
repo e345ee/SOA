@@ -32,7 +32,7 @@ public final class TicketSearchValidator {
     private static void validatePagination(SearchDto request) {
         Long page = request.getPage();
         Long size = request.getSize();
-        if (page == null || page <= 0 || page > 1_000_000) {
+        if (page == null || page < 0 || page > 1_000_000) {
             throw new RequestValidationException("page", "Invalid page: " + page);
         }
         if (size == null || size <= 0 || size > 100) {

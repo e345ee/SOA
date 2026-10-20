@@ -10,7 +10,7 @@ public class Person {
 
     private Date birthday;
 
-    private Double weight;
+    private Integer weight;
 
     private Location location;
 

@@ -2,13 +2,10 @@ package se.ifmo.ru.error.mappers;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import se.ifmo.ru.dto.response.ErrorResponse;
 
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -18,23 +15,18 @@ public class WebApplicationExceptionMapper implements ExceptionMapper<WebApplica
 
     @Override
     public Response toResponse(WebApplicationException exception) {
-        int status = exception.getResponse().getStatus();
-        String message;
-        if (status >= 500) {
+        Response original = exception.getResponse();
+        String detail = exception.getMessage();
+        if (original.getStatus() >= 500) {
             LOGGER.log(Level.SEVERE, "HTTP server error", exception);
-            message = "Internal server error";
-        } else {
-            message = exception.getMessage();
-            if (message == null || message.isBlank()) {
-                message = exception.getResponse().getStatusInfo().getReasonPhrase();
-            }
+            detail = "Internal server error";
         }
-        ErrorResponse error = new ErrorResponse(status, message, List.of());
-        return Response.fromResponse(exception.getResponse())
+        Response error = ErrorResponses.build(original.getStatusInfo(), detail);
+        return Response.fromResponse(original)
                 .header(HttpHeaders.CONTENT_LENGTH, null)
                 .header(HttpHeaders.CONTENT_ENCODING, null)
-                .type(MediaType.APPLICATION_JSON_TYPE)
-                .entity(error)
+                .type(error.getMediaType())
+                .entity(error.getEntity())
                 .build();
     }
 }

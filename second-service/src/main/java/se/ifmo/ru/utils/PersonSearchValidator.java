@@ -13,7 +13,7 @@ import java.util.*;
 public class PersonSearchValidator {
     private static final Map<String, String> FIELDS = Map.of("id", "id",
             "weight", "weight",
-            "birthdate", "birthDate",
+            "birthday", "birthday",
             "x", "location.x",
             "y", "location.y");
 
@@ -32,7 +32,7 @@ public class PersonSearchValidator {
     private static void validatePagination(SearchDto searchDto) {
         Long page =  searchDto.getPage();
         Long size =  searchDto.getSize();
-        if (page == null || page <= 0 || page > 1_000_000)
+        if (page == null || page < 0 || page > 1_000_000)
             throw new RequestValidationException("page", "page number " + page + " is invalid");
         if (size == null || size <= 0 || size > 100)
             throw new RequestValidationException("size", "size number " + size + " is invalid");
@@ -49,7 +49,7 @@ public class PersonSearchValidator {
             Object converted = switch (key) {
                 case "id" -> validateLong(value, key);
                 case "x", "y", "weight" -> validateInteger(value, key);
-                case "birthdate" -> validateDate(value, key);
+                case "birthday" -> validateDate(value, key);
                 default -> throw new RequestValidationException("filter", "filter key " + key + " is invalid");
             };
             filters.put(FIELDS.get(key), converted);

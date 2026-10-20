@@ -5,12 +5,10 @@ import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import se.ifmo.ru.error.exceptions.ResourceConflictException;
 
-import java.util.List;
-
 @Provider
 public class ResourceConflictExceptionMapper implements ExceptionMapper<ResourceConflictException> {
     @Override
-    public Response toResponse(ResourceConflictException exception){
-        return ErrorResponses.build(Response.Status.CONFLICT, exception.getMessage(), List.of());
+    public Response toResponse(ResourceConflictException exception) {
+        return ErrorResponses.build(Response.Status.CONFLICT, exception.getMessage());
     }
 }

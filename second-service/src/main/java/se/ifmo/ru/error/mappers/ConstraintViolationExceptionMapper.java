@@ -1,43 +1,34 @@
 package se.ifmo.ru.error.mappers;
 
-import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.ElementKind;
 import jakarta.validation.Path;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import se.ifmo.ru.dto.response.ErrorResponse;
-import se.ifmo.ru.dto.response.ErrorResponse.FieldError;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.StreamSupport;
+import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 @Provider
 public class ConstraintViolationExceptionMapper implements ExceptionMapper<ConstraintViolationException> {
     @Override
     public Response toResponse(ConstraintViolationException exception) {
-        List<FieldError> errors = exception.getConstraintViolations()
-                .stream()
-                .map(violation ->
-                        new FieldError(getFieldName(violation.getPropertyPath()),
-                                violation.getMessage()))
-                .toList();
-        ErrorResponse error = new ErrorResponse(400, "Invalid request parameters", errors);
-        return Response.status(Response.Status.BAD_REQUEST)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(error)
-                .build();
+        String detail = exception.getConstraintViolations().stream()
+                .map(violation -> fieldName(violation.getPropertyPath()) + ": " + violation.getMessage())
+                .distinct()
+                .sorted()
+                .collect(Collectors.joining("; "));
+        return ErrorResponses.build(Response.Status.BAD_REQUEST, detail);
     }
-    private String getFieldName(Path path) {
-        String fieldName = "";
+
+    private String fieldName(Path path) {
+        StringJoiner field = new StringJoiner(".");
         for (Path.Node node : path) {
             if (node.getKind() == ElementKind.PROPERTY) {
-                fieldName = node.getName();
+                field.add(node.getName());
             }
         }
-        return fieldName.isEmpty() ? "$" : fieldName;
+        return field.length() == 0 ? "$" : field.toString();
     }
 }

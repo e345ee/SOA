@@ -79,11 +79,22 @@ public class PersonService {
         }
         if (sorts.stream().noneMatch(s -> s.property().equals("id")))
             sorts.add(Sort.asc("id"));
-        PageRequest page = PageRequest.ofPage(requestDto.getPage()).size(Math.toIntExact(requestDto.getSize()));
+        PageRequest page = PageRequest.ofPage(requestDto.getPage() + 1).size(Math.toIntExact(requestDto.getSize()));
         List<Person> people = personRepository.search(filters,page, sorts);
         List<PersonResponseDto> content = people.stream().map(person -> personMapper.toPersonResponseDto(person)).toList();
         Long total = personRepository.count(filters);
         return ResponsePaginationDto.ans(content,requestDto.getPage(),requestDto.getSize(),total);
+    }
+
+    public ResponsePaginationDto<PersonResponseDto> getPersons(long page, int size) {
+        List<Sort<Person>> sorts = List.of(Sort.asc("id"));
+        List<PersonResponseDto> content = personRepository
+                .search(Map.of(), PageRequest.ofPage(page + 1).size(size), sorts)
+                .stream()
+                .map(personMapper::toPersonResponseDto)
+                .toList();
+        long total = personRepository.count(Map.of());
+        return ResponsePaginationDto.ans(content, page, (long) size, total);
     }
 
     public Person getPersonById(Long personId) {

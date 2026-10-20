@@ -6,6 +6,6 @@ import jakarta.validation.constraints.Positive;
 
 import java.util.Date;
 
-public record PersonCreateDto (@NotNull Date birthDate, @NotNull @Positive Long weight,
-                               @NotNull @Valid LocationDto locationDto) {
+public record PersonCreateDto (@NotNull Date birthday, @NotNull @Positive Integer weight,
+                               @NotNull @Valid LocationDto location) {
 }
