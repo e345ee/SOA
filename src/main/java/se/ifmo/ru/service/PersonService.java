@@ -57,17 +57,11 @@ public class PersonService {
     }
 
     public ResponsePaginationDto<PersonResponseDto> search(SearchDto requestDto) {
-        PersonSearchValidator.validateSearch(requestDto);
-        Map<String, String> map = Map.of("id", "id", "name", "name", "weight", "weight",
-                "birthdate", "birthDate", "x", "location.x", "y", "location.y");
-        Map<String, Object> filters = new HashMap<>();
-        if (requestDto.getFilter() != null) {
-            requestDto.getFilter().forEach((key, value) -> filters.put(map.get(key), value));
-        }
+        Map<String, Object> filters = PersonSearchValidator.validateSearch(requestDto);
         List<Sort<Person>> sorts = new ArrayList<>();
         if (requestDto.getSort() != null) {
             for (var item : requestDto.getSort()) {
-                String field = item.field();
+                String field = PersonSearchValidator.field(item.field());
                 String direction = item.direction();
                 if (direction.equals("DESC")) {
                     sorts.add(Sort.desc(field));

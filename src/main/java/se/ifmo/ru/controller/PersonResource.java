@@ -48,8 +48,7 @@ public class PersonResource {
     @POST
     @Path("/search")
     public Response searchPerson(SearchDto searchDto) {
-        personService.search(searchDto);
-        return Response.ok().build();
+        return Response.ok(personService.search(searchDto)).build();
     }
 
 

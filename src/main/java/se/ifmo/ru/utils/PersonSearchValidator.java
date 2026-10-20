@@ -4,22 +4,30 @@ import jakarta.enterprise.context.ApplicationScoped;
 import se.ifmo.ru.error.exceptions.RequestValidationException;
 import se.ifmo.ru.dto.request.SearchDto;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @ApplicationScoped
 public class PersonSearchValidator {
-    private static List<String> FIELDS = Arrays.asList("id", "name", "weight", "x", "y", "birthdate");
-    public static void validateSearch(SearchDto searchDto) {
+    private static final Map<String, String> FIELDS = Map.of("id", "id",
+            "weight", "weight",
+            "birthdate", "birthDate",
+            "x", "location.x",
+            "y", "location.y");
+
+    public static String field(String key) {
+        return FIELDS.get(key);
+    }
+    public static Map<String,Object> validateSearch(SearchDto searchDto) {
         if (searchDto==null) {
             throw new RequestValidationException("$", "search parameter is null");
         }
         validatePagination(searchDto);
-        validateFilter(searchDto);
+        Map<String, Object> filters = validateFilter(searchDto);
         validateSorting(searchDto);
+        return filters;
     }
     private static void validatePagination(SearchDto searchDto) {
         Long page =  searchDto.getPage();
@@ -29,52 +37,54 @@ public class PersonSearchValidator {
         if (size == null || size <= 0 || size > 100)
             throw new RequestValidationException("size", "size number " + size + " is invalid");
     }
-    private static void validateFilter(SearchDto searchDto){
-        if (searchDto.getFilter() == null) return;
+    private static Map<String, Object> validateFilter(SearchDto searchDto){
+        Map<String, Object> filters = new HashMap<>();
+        if (searchDto.getFilter() == null) return filters;
         for (var entry: searchDto.getFilter().entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
-            if (!FIELDS.contains(key)) {
+            if (!FIELDS.containsKey(key)) {
                 throw new RequestValidationException("filter", "filter key " + key + " is invalid");
             }
-            switch(key){
+            Object converted = switch (key) {
                 case "id" -> validateLong(value, key);
-                case "x" -> validateInteger(value, key);
-                case "name" -> validateString(value,key);
-                case "weight" -> validateDouble(value, key);
-                case "y" -> validateDouble(value, key);
+                case "x", "y", "weight" -> validateInteger(value, key);
                 case "birthdate" -> validateDate(value, key);
-            }
+                default -> throw new RequestValidationException("filter", "filter key " + key + " is invalid");
+            };
+            filters.put(FIELDS.get(key), converted);
         }
+        return filters;
     }
-    private static void validateInteger(Object value, String field) {
+    private static Integer validateInteger(Object value, String field) {
         try {
-            Integer.parseInt(value.toString());
+            return Integer.parseInt(value.toString());
         } catch (NumberFormatException | NullPointerException e) {
             throw new RequestValidationException("filter." + field, "Invalid " + field);
         }
     }
-    private static void validateLong(Object value, String field) {
+    private static Long validateLong(Object value, String field) {
         try {
-            Long.parseLong(value.toString());
+            return Long.parseLong(value.toString());
         } catch (NumberFormatException | NullPointerException e) {
             throw new RequestValidationException("filter." + field, "Invalid " + field);
         }
     }
-    private static void validateDouble(Object value, String field) {
+    private static Double validateDouble(Object value, String field) {
         try {
             double number = Double.parseDouble(value.toString());
             if (!Double.isFinite(number)) {
                 throw new RequestValidationException("filter." + field, "Invalid " + field);
             }
+            return number;
         } catch (NumberFormatException | NullPointerException e) {
             throw new RequestValidationException("filter." + field, "Invalid " + field);
         }
     }
 
-    private static void validateDate(Object value, String field) {
+    private static Date validateDate(Object value, String field) {
         try {
-            LocalDateTime.parse(value.toString());
+            return Date.from(Instant.parse(value.toString()));
         } catch (DateTimeParseException | NullPointerException e) {
             throw new RequestValidationException("filter." + field, "Invalid " + field);
         }
@@ -94,7 +104,7 @@ public class PersonSearchValidator {
             }
             String field = sort.field();
             String direction = sort.direction();
-            if (!FIELDS.contains(field)) {
+            if (!FIELDS.containsKey(field)) {
                 throw new RequestValidationException("sort[" + index + "].field", "Invalid sort field: " + field);
             }
             if (direction == null ||

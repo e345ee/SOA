@@ -11,10 +11,8 @@ import se.ifmo.ru.error.exceptions.RequestValidationException;
 public class RequestValidationExceptionMapper implements ExceptionMapper<RequestValidationException> {
     @Override
     public Response toResponse(RequestValidationException exception) {
-        ErrorResponse error = new ErrorResponse(400, exception.getMessage(), exception.getErrors());
-        return Response.status(400)
-                .type(MediaType.APPLICATION_JSON_TYPE)
-                .entity(error)
-                .build();
+        return ErrorResponses.build(Response.Status.BAD_REQUEST
+                , exception.getMessage(),
+                exception.getErrors());
     }
 }
