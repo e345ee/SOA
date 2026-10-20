@@ -5,6 +5,7 @@ import jakarta.data.page.PageRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import se.ifmo.ru.error.exceptions.ResourceConflictException;
 import se.ifmo.ru.error.exceptions.ResourceNotFoundException;
 import se.ifmo.ru.dto.request.PersonCreateDto;
 import se.ifmo.ru.dto.request.SearchDto;
@@ -24,7 +25,9 @@ public class PersonService {
     private PersonRepository personRepository;
     @Inject
     private PersonMapper personMapper;
-    
+    @Inject
+    private TicketStatisticsService ticketStatisticsService;
+
     public PersonResponseDto findById(Long personId) {
         Person person = personRepository.findById(personId).orElseThrow(
                 () -> new ResourceNotFoundException("person with id " + personId + " not found"));
@@ -41,13 +44,17 @@ public class PersonService {
         Person person = personMapper.toPerson(personCreateDto);
         return personRepository.insert(person);
     }
+    @Transactional
     public void deletePersonById(Long personId){
         if (personRepository.findById(personId).isPresent()) {
+            long count = ticketStatisticsService.countByPerson(personId);
+            if (count > 0) throw new ResourceConflictException("Person with id " + personId + " is used by "+ count + " ticket(s)");
             personRepository.deleteById(personId);
         }else{
             throw new ResourceNotFoundException("person with id " + personId + " not found");
         }
     }
+    @Transactional
     public PersonResponseDto updatePerson(Long personId, PersonCreateDto personCreateDto) {
         Person person = personRepository.findById(personId).orElseThrow(
                 () -> new ResourceNotFoundException("person with id " + personId + " not found"));
@@ -63,7 +70,7 @@ public class PersonService {
             for (var item : requestDto.getSort()) {
                 String field = PersonSearchValidator.field(item.field());
                 String direction = item.direction();
-                if (direction.equals("DESC")) {
+                if ("DESC".equalsIgnoreCase(direction)) {
                     sorts.add(Sort.desc(field));
                 }else{
                     sorts.add(Sort.asc(field));
@@ -73,7 +80,7 @@ public class PersonService {
         if (sorts.stream().noneMatch(s -> s.property().equals("id")))
             sorts.add(Sort.asc("id"));
         PageRequest page = PageRequest.ofPage(requestDto.getPage()).size(Math.toIntExact(requestDto.getSize()));
-        List<Person> people = personRepository.search(requestDto.getFilter(),page, sorts);
+        List<Person> people = personRepository.search(filters,page, sorts);
         List<PersonResponseDto> content = people.stream().map(person -> personMapper.toPersonResponseDto(person)).toList();
         Long total = personRepository.count(filters);
         return ResponsePaginationDto.ans(content,requestDto.getPage(),requestDto.getSize(),total);

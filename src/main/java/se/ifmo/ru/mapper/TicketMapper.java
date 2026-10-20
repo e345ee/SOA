@@ -12,6 +12,7 @@ import se.ifmo.ru.model.Ticket;
 public interface TicketMapper {
     @Mapping(target="coordinates", source="coordinatesDto")
     @Mapping(target="type", source="ticketType")
+    @Mapping(target = "person", ignore = true)
     Ticket toTicket(TicketCreateDto ticketCreateDto);
 
     @Mapping(target="id", ignore=true)

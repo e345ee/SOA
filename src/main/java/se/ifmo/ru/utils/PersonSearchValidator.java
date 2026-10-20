@@ -104,7 +104,7 @@ public class PersonSearchValidator {
             }
             String field = sort.field();
             String direction = sort.direction();
-            if (!FIELDS.containsKey(field)) {
+            if (field == null || !FIELDS.containsKey(field)) {
                 throw new RequestValidationException("sort[" + index + "].field", "Invalid sort field: " + field);
             }
             if (direction == null ||

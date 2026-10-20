@@ -16,4 +16,7 @@ public class TicketStatisticsService {
     public Double getAvg(){
         return ticketRepository.averagePrice();
     }
+    public Long countByPerson(Long personId) {
+        return ticketRepository.countByPerson(personId);
+    }
 }
