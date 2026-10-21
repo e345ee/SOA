@@ -21,7 +21,6 @@ import java.util.*;
 import java.util.logging.Logger;
 
 @ApplicationScoped
-@Transactional(Transactional.TxType.REQUIRED)
 public class PersonService {
     @Inject
     private PersonRepository personRepository;
@@ -30,11 +29,14 @@ public class PersonService {
     @Inject
     private TicketStatisticsService ticketStatisticsService;
 
+    @Transactional(Transactional.TxType.REQUIRED)
     public PersonResponseDto findById(Long personId) {
         Person person = personRepository.findById(personId).orElseThrow(
                 () -> new ResourceNotFoundException("person with id " + personId + " not found"));
         return personMapper.toPersonResponseDto(person);
     }
+
+    @Transactional(Transactional.TxType.REQUIRED)
     public PersonResponseDto savePerson(PersonCreateDto personCreateDto) {
         Person person = savePersonEntity(personCreateDto);
         return personMapper.toPersonResponseDto(person);
@@ -45,6 +47,8 @@ public class PersonService {
         Person person = personMapper.toPerson(personCreateDto);
         return personRepository.insert(person);
     }
+
+    @Transactional(Transactional.TxType.REQUIRED)
     public void deletePersonById(Long personId){
         if (personRepository.findById(personId).isPresent()) {
             long count = ticketStatisticsService.countByPerson(personId);
@@ -54,6 +58,8 @@ public class PersonService {
             throw new ResourceNotFoundException("person with id " + personId + " not found");
         }
     }
+
+    @Transactional(Transactional.TxType.REQUIRED)
     public PersonResponseDto updatePerson(Long personId, PersonCreateDto personCreateDto) {
         Person person = personRepository.findById(personId).orElseThrow(
                 () -> new ResourceNotFoundException("person with id " + personId + " not found"));
@@ -62,6 +68,7 @@ public class PersonService {
         return personMapper.toPersonResponseDto(newPerson);
     }
 
+    @Transactional(Transactional.TxType.REQUIRED)
     public ResponsePaginationDto<PersonResponseDto> search(SearchDto<PersonSearchFilter> requestDto) {
         Map<String, Object> filters = PersonSearchValidator.validateSearch(requestDto);
         List<Sort<Person>> sorts = new ArrayList<>();
@@ -84,10 +91,12 @@ public class PersonService {
         return ResponsePaginationDto.ans(content,requestDto.getPage(),requestDto.getSize(),total);
     }
 
+    @Transactional(Transactional.TxType.REQUIRED)
     public ResponsePaginationDto<PersonResponseDto> getPersons(long page, int size) {
         return search(new SearchDto<>(null, page, (long) size, null));
     }
 
+    @Transactional(Transactional.TxType.REQUIRED)
     public Person getPersonById(Long personId) {
         return personRepository.findById(personId).orElseThrow(
                 () -> new ResourceNotFoundException("person with id " + personId + " not found"));

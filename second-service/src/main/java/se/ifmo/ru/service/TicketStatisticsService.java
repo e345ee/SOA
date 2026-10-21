@@ -9,18 +9,23 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @ApplicationScoped
-@Transactional(Transactional.TxType.REQUIRED)
 public class TicketStatisticsService {
     @Inject
     TicketRepository ticketRepository;
     public TicketStatisticsService() {
     }
+
+    @Transactional(Transactional.TxType.REQUIRED)
     public Double getSum(){
         Double value=ticketRepository.getPriceSum();return value==null?0.0:value;
     }
+
+    @Transactional(Transactional.TxType.REQUIRED)
     public Double getAvg(){
         Double value=ticketRepository.averagePrice();return value==null?0.0:value;
     }
+
+    @Transactional(Transactional.TxType.REQUIRED)
     public Long countByPerson(PersonInputDto person) {
         Map<String,Object> filters=new LinkedHashMap<>();
         if(person.getId()!=null)filters.put("person.id",person.getId());
@@ -29,6 +34,7 @@ public class TicketStatisticsService {
         return ticketRepository.count(filters);
     }
 
+    @Transactional(Transactional.TxType.REQUIRED)
     public Long countByPerson(Long personId) {
         return ticketRepository.countByPerson(personId);
     }

@@ -11,7 +11,6 @@ import jakarta.transaction.Transactional;
 import io.github.timur0o31.soa_booking_service.error.exceptions.RequestValidationException;
 
 @ApplicationScoped
-@Transactional(Transactional.TxType.NOT_SUPPORTED)
 public class BookingService {
     private static final float MINIMUM_TICKET_PRICE = 1.0f;
 
@@ -19,6 +18,7 @@ public class BookingService {
     private TicketClient ticketClient;
     @Inject
     TicketMapper ticketMapper;
+    @Transactional(Transactional.TxType.NOT_SUPPORTED)
     public TicketResponseDto createTicket(Long ticketId, Long personId, Float discount){
         if (ticketId == null || ticketId <= 0) {
             throw new RequestValidationException("ticketId", "Идентификатор должен быть положительным");
@@ -41,6 +41,8 @@ public class BookingService {
         Ticket ticketResponse = ticketClient.createTicket(ticketCreateDto);
         return ticketMapper.toTicketResponseDto(ticketResponse);
     }
+
+    @Transactional(Transactional.TxType.NOT_SUPPORTED)
     public void cancelEvent(Long eventId) {
         ticketClient.cancelEvent(eventId);
     }

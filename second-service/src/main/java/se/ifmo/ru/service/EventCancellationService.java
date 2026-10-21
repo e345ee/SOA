@@ -10,7 +10,6 @@ import jakarta.transaction.UserTransaction;
 import se.ifmo.ru.error.exceptions.ResourceNotFoundException;
 
 @ApplicationScoped
-@Transactional(Transactional.TxType.NOT_SUPPORTED)
 public class EventCancellationService {
     @Resource(lookup = "java:comp/UserTransaction")
     private UserTransaction transaction;
@@ -18,6 +17,7 @@ public class EventCancellationService {
     @PersistenceContext(unitName = "default")
     private EntityManager entityManager;
 
+    @Transactional(Transactional.TxType.NOT_SUPPORTED)
     public void cancelEvent(long eventId) {
         try {
             transaction.begin();

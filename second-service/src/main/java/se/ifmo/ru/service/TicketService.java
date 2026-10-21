@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 
 @ApplicationScoped
-@Transactional(Transactional.TxType.REQUIRED)
 public class TicketService {
     @Inject
     private TicketStatisticsService ticketStatisticsService;
@@ -38,17 +37,22 @@ public class TicketService {
     @Inject
     private TicketMapper ticketMapper;
 
+    @Transactional(Transactional.TxType.REQUIRED)
     public TicketResponseDto findById(Long ticketId) {
         Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(
                 () -> new ResourceNotFoundException("Ticket with id " + ticketId + " not found"));
         return ticketMapper.toTicketResponseDto(ticket);
     }
+
+    @Transactional(Transactional.TxType.REQUIRED)
     public TicketResponseDto saveTicket(TicketCreateDto ticketCreateDto) {
         Person person = parsePerson(ticketCreateDto.getPersonId(), ticketCreateDto.getPerson());
         Ticket ticket = ticketMapper.toTicket(ticketCreateDto);
         ticket.setPerson(person);
         return ticketMapper.toTicketResponseDto(ticketRepository.insert(ticket));
     }
+
+    @Transactional(Transactional.TxType.REQUIRED)
     public void deleteTicketById(Long ticketId){
         if (ticketRepository.findById(ticketId).isPresent()) {
             ticketRepository.deleteById(ticketId);
@@ -57,6 +61,7 @@ public class TicketService {
         }
     }
 
+    @Transactional(Transactional.TxType.REQUIRED)
     public TicketResponseDto updateTicket(Long ticketId, TicketUpdateDto ticketCreateDto) {
         Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(
                 () -> new ResourceNotFoundException("Ticket with id " + ticketId + " not found"));
@@ -76,18 +81,22 @@ public class TicketService {
         return personService.savePersonEntity(personDto.toCreate());
     }
 
+    @Transactional(Transactional.TxType.REQUIRED)
     public Long countByPerson(PersonInputDto person) {
         return ticketStatisticsService.countByPerson(person);
     }
 
+    @Transactional(Transactional.TxType.REQUIRED)
     public Double getSum(){
         return ticketStatisticsService.getSum();
     }
 
+    @Transactional(Transactional.TxType.REQUIRED)
     public Double getAvg(){
         return ticketStatisticsService.getAvg();
     }
 
+    @Transactional(Transactional.TxType.REQUIRED)
     public ResponsePaginationDto<TicketResponseDto> search(SearchDto<TicketSearchFilter> dto) {
         Map<String, Object> filters = TicketSearchValidator.validateSearch(dto);
         List<Sort<Ticket>> sorts = new ArrayList<>();
@@ -109,6 +118,7 @@ public class TicketService {
         return ResponsePaginationDto.ans(content, dto.getPage(), dto.getSize(), total);
     }
 
+    @Transactional(Transactional.TxType.REQUIRED)
     public ResponsePaginationDto<TicketResponseDto> getTickets(long page, int size) {
         return search(new SearchDto<>(null, page, (long) size, null));
     }
