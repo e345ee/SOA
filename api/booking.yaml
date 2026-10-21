@@ -298,6 +298,12 @@ paths:
                 title: Not Found
                 status: 404
                 detail: Человек с id=13 не найден
+        '502':
+          description: Ошибка или недоступность Ticket Service. При потере ответа после commit результат команды может быть неизвестен клиенту.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /event/{event-id}/cancel:
     post:
@@ -338,3 +344,9 @@ paths:
                 title: Not Found
                 status: 404
                 detail: Билеты с eventId=13 не найден
+        '502':
+          description: Ошибка или недоступность Ticket Service. При потере ответа после commit результат команды может быть неизвестен клиенту.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
