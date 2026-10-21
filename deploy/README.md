@@ -9,15 +9,16 @@ Apply `migrations/V002__nullable_fields.sql` transactionally to the existing sch
 before deploying this release. It preserves rows and checks the int32 range before
 changing the type of tickets.y. Back up the database and current WARs first.
 
-The approved Swagger schema copies are packaged as `api-schemas.json`. The request
-filter validates write payloads against them before JSON-B deserialization. Keep
-these copies in sync only when an approved API contract changes. Unknown object
+Ticket's approved Swagger schemas are packaged as `api-schemas.json`. Its request
+filter validates write payloads before JSON-B deserialization. Booking's operations
+use URL parameters and validate them in BookingResource and BookingService.
+Change the schemas only when an approved API contract changes. Unknown object
 properties remain allowed according to OpenAPI's default; read-only fields do not
 become required on write. Response DTOs follow the same property names and types.
 
 The authoritative API documents are `api/ticket.yaml` and `api/booking.yaml`.
 After an approved change, run `python3 deploy/sync-contracts.py` (requires PyYAML)
-to update both backend schema copies and the frontend contract. Run the same
+to update Ticket's backend schema copy and both frontend contracts. Run the same
 command with `--check` before building. Publish the YAML files as
 `/var/www/kronva-stat/swagger/ticket.yaml` and `booking.yaml`, and publish the
 updated frontend contract. Rebuild/redeploy a service when its packaged schemas
