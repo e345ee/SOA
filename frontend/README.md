@@ -18,8 +18,7 @@
 
 Публичный каталог `/var/www/kronva-stat`: `index.html`, `assets/`. Nginx должен возвращать index.html только для точных путей `/tickets/`, `/persons/`, `/booking/`; пути без конечного слеша перенаправляются. API и Swagger обслуживаются существующими location. Для assets применяется Cache-Control: no-cache.
 
-Релиз: `/opt/soa-deploy/20261021T040654Z-frontend-refined`.
-Снимок предыдущих index.html, assets и nginx-конфигурации: `/var/backups/soa/20261021T040441Z-frontend-refinement`.
+Текущий каталог исходников frontend на VPS указан в `/opt/soa-deploy/frontend-run`. Резервные копии предыдущих файлов находятся в `before/` каталога соответствующего backend-релиза.
 
 ## Контракт и проверка
 
