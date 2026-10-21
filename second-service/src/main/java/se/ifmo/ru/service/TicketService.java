@@ -46,6 +46,7 @@ public class TicketService {
         ticket.setPerson(person);
         return ticketMapper.toTicketResponseDto(ticketRepository.insert(ticket));
     }
+    @Transactional
     public void deleteTicketById(Long ticketId){
         if (ticketRepository.findById(ticketId).isPresent()) {
             ticketRepository.deleteById(ticketId);

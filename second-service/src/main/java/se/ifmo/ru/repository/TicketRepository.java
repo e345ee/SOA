@@ -12,7 +12,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
-@Repository
+@Repository(provider = "Hibernate", dataStore = "default")
 public interface TicketRepository extends CrudRepository<Ticket, Long> {
     StatelessSession session();
     default List<Ticket> search(Map<String, Object> filters, PageRequest pageRequest, List<Sort<Ticket>> sorts) {

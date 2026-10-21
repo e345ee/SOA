@@ -12,7 +12,7 @@ import se.ifmo.ru.utils.CriteriaSearch;
 import java.util.List;
 import java.util.Map;
 
-@Repository
+@Repository(provider = "Hibernate", dataStore = "default")
 public interface PersonRepository extends CrudRepository<Person, Long> {
     StatelessSession session();
 
