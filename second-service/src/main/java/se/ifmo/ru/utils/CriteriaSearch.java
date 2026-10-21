@@ -48,8 +48,7 @@ public class CriteriaSearch {
         List<Predicate> where = new ArrayList<>();
         if (filters != null) {
             for (var filter : filters.entrySet()) {
-                Path<?> col = path(root, filter.getKey());
-                where.add(cb.equal(col, convert(col.getJavaType(), filter.getValue())));
+                where.add(toPredicate(cb,root, filter.getKey(), filter.getValue()));
             }
         }
         return where.toArray(Predicate[]::new);

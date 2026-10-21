@@ -6,6 +6,7 @@ import io.github.timur0o31.soa_booking_service.model.Ticket;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
@@ -15,6 +16,7 @@ import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,15 +25,16 @@ import java.util.Map;
 @ApplicationScoped
 public class TicketClient {
     private Client client;
-    private final String URI= "https://localhost:14321/api/v1";
-
+    @Inject
+    @ConfigProperty(name = "ticket.service.url")
+    String baseUrl;
     @PostConstruct
     public void init(){
         client = ClientBuilder.newClient();
     }
 
     public Ticket getTicketById(Long ticketId){
-        WebTarget target = client.target(URI).path("tickets/"+ticketId);
+        WebTarget target = client.target(baseUrl).path("tickets/"+ticketId);
         try {
             Response response = target.request(MediaType.APPLICATION_JSON).get();
             if (response.getStatus() == 404) {
@@ -49,7 +52,7 @@ public class TicketClient {
     }
 
     public Ticket createTicket(TicketCreateDto ticketCreateDto){
-        WebTarget target= client.target(URI).path("tickets/");
+        WebTarget target= client.target(baseUrl).path("tickets/");
         try{
             try (Response response = target.request(MediaType.APPLICATION_JSON).post(Entity.json(ticketCreateDto))) {
                 if (response.getStatus() == 400) {
@@ -78,7 +81,7 @@ public class TicketClient {
                     "page", page,
                     "size", size,
                     "sort", List.of(Map.of("field", "id", "direction", "ASC")));
-            WebTarget target = client.target(URI).path("tickets/search");
+            WebTarget target = client.target(baseUrl).path("tickets/search");
             try (Response response = target.request(MediaType.APPLICATION_JSON).post(Entity.json(body))) {
                 if (response.getStatus() != 200) {
                     throw new WebApplicationException("Ошибка поиска: первый сервис вернул HTTP " + response.getStatus(), Response.Status.BAD_GATEWAY);
@@ -103,7 +106,7 @@ public class TicketClient {
     }
 
     public void deleteTicketById(Long ticketId) {
-        WebTarget target = client.target(URI).path("tickets/" + ticketId);
+        WebTarget target = client.target(baseUrl).path("tickets/" + ticketId);
         try (Response response = target.request().delete()) {
             if (response.getStatus() == 404) {
                 throw new NotFoundException("Билет с id=" + ticketId + " не найден");

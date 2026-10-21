@@ -21,7 +21,7 @@ public class BookingService {
         Ticket ticket = ticketClient.getTicketById(ticketId);
         TicketCreateDto ticketCreateDto = ticketMapper.toTicketCreateDto(ticket);
         ticketCreateDto.setPersonId(personId);
-        ticketCreateDto.setPrice(ticket.getPrice()-ticket.getPrice()*discount);
+        ticketCreateDto.setPrice(ticket.getPrice()-ticket.getPrice()*discount/100f);
         Ticket ticketResponse = ticketClient.createTicket(ticketCreateDto);
         return ticketMapper.toTicketResponseDto(ticketResponse);
     }
