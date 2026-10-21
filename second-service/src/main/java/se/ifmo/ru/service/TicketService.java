@@ -75,6 +75,10 @@ public class TicketService {
         return personService.savePersonEntity(personDto);
     }
 
+    public Long countByPerson(PersonCreateDto person) {
+        return ticketStatisticsService.countByPerson(person);
+    }
+
     public Double getSum(){
         return ticketStatisticsService.getSum();
     }
@@ -114,4 +118,5 @@ public class TicketService {
         Long total = ticketRepository.count(Map.of());
         return ResponsePaginationDto.ans(content, page, (long) size, total);
     }
+
 }

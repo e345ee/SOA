@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import lombok.Getter;
+import se.ifmo.ru.dto.request.PersonCreateDto;
 import se.ifmo.ru.dto.request.SearchDto;
 import se.ifmo.ru.dto.request.TicketCreateDto;
 import se.ifmo.ru.dto.response.TicketResponseDto;
@@ -75,8 +76,8 @@ public class TicketResource {
 
     @POST
     @Path("/count-by-person")
-    public Response getCountByPerson(){
-        return Response.ok().build();
+    public Response getCountByPerson(@NotNull @Valid PersonCreateDto dto){
+        return Response.ok(ticketService.countByPerson(dto)).build();
     }
 
 }

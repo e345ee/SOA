@@ -5,6 +5,7 @@ import se.ifmo.ru.error.exceptions.RequestValidationException;
 import se.ifmo.ru.dto.request.SearchDto;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -82,11 +83,14 @@ public class PersonSearchValidator {
         }
     }
 
-    private static Date validateDate(Object value, String field) {
+    private static LocalDate validateDate(Object value, String field) {
+        if (!(value instanceof String text)) {
+            throw new RequestValidationException("filter." + field, "Expected date in yyyy-MM-dd format");
+        }
         try {
-            return Date.from(Instant.parse(value.toString()));
-        } catch (DateTimeParseException | NullPointerException e) {
-            throw new RequestValidationException("filter." + field, "Invalid " + field);
+            return LocalDate.parse(text);
+        } catch (DateTimeParseException e) {
+            throw new RequestValidationException("filter." + field, "Expected date in yyyy-MM-dd format");
         }
     }
 

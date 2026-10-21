@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 @Entity
 @Table(name="persons")
@@ -18,7 +18,7 @@ public class Person {
     private Long id;
 
     @NotNull
-    private Date birthday;
+    private LocalDate birthday;
 
     @NotNull
     @Positive

@@ -8,6 +8,7 @@ import org.hibernate.StatelessSession;
 import se.ifmo.ru.model.Ticket;
 import se.ifmo.ru.utils.CriteriaSearch;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +32,27 @@ public interface TicketRepository extends CrudRepository<Ticket, Long> {
     default Double averagePrice(){
         return session()
                 .createQuery("SELECT avg(t.price) FROM Ticket t", Double.class)
+                .getSingleResult();
+    }
+
+    default Long countByPersonValues(LocalDate birthday, Integer weight,
+                                     Integer x, Integer y, String name) {
+        return session()
+                .createNativeQuery("""
+                    SELECT COUNT(*) FROM tickets
+                    WHERE person_id IN (
+                        SELECT id FROM persons
+                        WHERE birthday = :birthday
+                          AND weight = :weight
+                          AND x = :x
+                          AND y = :y
+                          AND name = :name)
+                """, Long.class)
+                .setParameter("birthday", birthday)
+                .setParameter("weight", weight)
+                .setParameter("x", x)
+                .setParameter("y", y)
+                .setParameter("name", name)
                 .getSingleResult();
     }
 

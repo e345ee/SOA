@@ -8,6 +8,7 @@ import org.hibernate.StatelessSession;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class CriteriaSearch {
@@ -53,7 +54,33 @@ public class CriteriaSearch {
         }
         return where.toArray(Predicate[]::new);
     }
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static Predicate toPredicate(CriteriaBuilder cb, Root<?> root, String key, Object value) {
+        if (key.endsWith(">=")) {
+            Path column = path(root, key.substring(0, key.length() - 2));
+            return cb.greaterThanOrEqualTo(column, (Comparable) convert(column.getJavaType(), value));
+        }
+        if (key.endsWith("<=")) {
+            Path column = path(root, key.substring(0, key.length() - 2));
+            return cb.lessThanOrEqualTo(column, (Comparable) convert(column.getJavaType(), value));
+        }
+        if (key.endsWith("~")) {
+            Expression<String> column = path(root, key.substring(0, key.length() - 1))
+                    .as(String.class);
+            String pattern = "%" +
+                    escapeLike(value.toString().toLowerCase(Locale.ROOT)) + "%";
+            return cb.like(cb.lower(column), pattern, '\\');
+        }
+        Path<?> column = path(root, key);
+        Object typedValue = convert(column.getJavaType(), value);
+        return cb.equal(column, typedValue);
+    }
 
+    private static String escapeLike(String text) {
+        return text.replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
+    }
     private static Object convert(Class<?> type, Object raw) {
         if (type.isInstance(raw)) {
             return raw;
