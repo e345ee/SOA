@@ -12,6 +12,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import se.ifmo.ru.dto.request.PersonCreateDto;
 import se.ifmo.ru.dto.request.SearchDto;
+import se.ifmo.ru.dto.request.PersonSearchFilter;
 import se.ifmo.ru.dto.response.PersonResponseDto;
 import se.ifmo.ru.dto.response.TicketResponseDto;
 import se.ifmo.ru.service.PersonService;
@@ -57,7 +58,7 @@ public class PersonResource {
 
     @POST
     @Path("/search")
-    public Response searchPerson(SearchDto searchDto) {
+    public Response searchPerson(@NotNull @Valid SearchDto<PersonSearchFilter> searchDto) {
         return Response.ok(personService.search(searchDto)).build();
     }
 

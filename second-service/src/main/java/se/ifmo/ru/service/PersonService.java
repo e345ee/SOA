@@ -9,6 +9,7 @@ import se.ifmo.ru.error.exceptions.ResourceConflictException;
 import se.ifmo.ru.error.exceptions.ResourceNotFoundException;
 import se.ifmo.ru.dto.request.PersonCreateDto;
 import se.ifmo.ru.dto.request.SearchDto;
+import se.ifmo.ru.dto.request.PersonSearchFilter;
 import se.ifmo.ru.dto.response.PersonResponseDto;
 import se.ifmo.ru.dto.response.ResponsePaginationDto;
 import se.ifmo.ru.mapper.PersonMapper;
@@ -63,12 +64,12 @@ public class PersonService {
         return personMapper.toPersonResponseDto(newPerson);
     }
 
-    public ResponsePaginationDto<PersonResponseDto> search(SearchDto requestDto) {
+    public ResponsePaginationDto<PersonResponseDto> search(SearchDto<PersonSearchFilter> requestDto) {
         Map<String, Object> filters = PersonSearchValidator.validateSearch(requestDto);
         List<Sort<Person>> sorts = new ArrayList<>();
         if (requestDto.getSort() != null) {
             for (var item : requestDto.getSort()) {
-                String field = PersonSearchValidator.field(item.field());
+                String field = item.field();
                 String direction = item.direction();
                 if ("DESC".equalsIgnoreCase(direction)) {
                     sorts.add(Sort.desc(field));

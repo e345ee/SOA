@@ -10,6 +10,7 @@ import jakarta.ws.rs.core.*;
 import lombok.Getter;
 import se.ifmo.ru.dto.request.PersonCreateDto;
 import se.ifmo.ru.dto.request.SearchDto;
+import se.ifmo.ru.dto.request.TicketSearchFilter;
 import se.ifmo.ru.dto.request.TicketCreateDto;
 import se.ifmo.ru.dto.response.TicketResponseDto;
 import se.ifmo.ru.service.TicketService;
@@ -30,7 +31,7 @@ public class TicketResource {
     }
     @POST
     @Path("/search")
-    public Response searchTickets(SearchDto dto) {
+    public Response searchTickets(@NotNull @Valid SearchDto<TicketSearchFilter> dto) {
         return Response.ok(ticketService.search(dto)).build();
     }
 

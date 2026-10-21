@@ -9,6 +9,7 @@ import se.ifmo.ru.dto.request.PersonCreateDto;
 import se.ifmo.ru.error.exceptions.RequestValidationException;
 import se.ifmo.ru.error.exceptions.ResourceNotFoundException;
 import se.ifmo.ru.dto.request.SearchDto;
+import se.ifmo.ru.dto.request.TicketSearchFilter;
 import se.ifmo.ru.dto.request.SortDto;
 import se.ifmo.ru.dto.request.TicketCreateDto;
 import se.ifmo.ru.dto.response.ResponsePaginationDto;
@@ -87,7 +88,7 @@ public class TicketService {
         return ticketStatisticsService.getAvg();
     }
 
-    public ResponsePaginationDto<TicketResponseDto> search(SearchDto dto) {
+    public ResponsePaginationDto<TicketResponseDto> search(SearchDto<TicketSearchFilter> dto) {
         Map<String, Object> filters = TicketSearchValidator.validateSearch(dto);
         List<Sort<Ticket>> sorts = new ArrayList<>();
         if (dto.getSort() != null) {
