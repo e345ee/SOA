@@ -59,6 +59,7 @@ function dateTimeValid(value) {
 function readValue(raw, schema, required) {
  schema = resolve(schema);
  const value = raw.trim();
+ if(schema.uiAllowNull && value==='__null__')return null;
  if (!value) { if (required) throw new Error('Заполните это поле.'); return undefined; }
  let parsed = value;
  if (schema.type === 'integer') {
@@ -96,7 +97,7 @@ function fields(schema, prefix='') {
 }
 function inputHTML(def, value='', placeholder='') {
  const schema=resolve(def.schema); const attributes=`name="${escape(def.path)}" aria-label="${escape(def.label)}" ${def.required?'required':''}`;
- if (schema.enum) return `<select ${attributes}><option value="">${def.required?'Выберите…':'Любой / не задан'}</option>${schema.enum.filter(x=>x!==null).map(x=>`<option value="${escape(x)}" ${String(x)===String(value)?'selected':''}>${escape(x)}</option>`).join('')}</select>`;
+ if (schema.enum) return `<select ${attributes}><option value="">${def.required?'Выберите…':schema.uiAllowNull?'Любой':'Не задан'}</option>${schema.uiAllowNull?`<option value="__null__" ${value===null?'selected':''}>Без типа</option>`:''}${schema.enum.filter(x=>x!==null).map(x=>`<option value="${escape(x)}" ${String(x)===String(value)?'selected':''}>${escape(x)}</option>`).join('')}</select>`;
  if (schema.format==='date-time' && value) { const date=new Date(value); if(Number.isFinite(date.getTime())) value=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16); }
  return `<input ${attributes} type="${inputType(schema)}" ${schema.format==='date'?`min="0001-01-01" max="${schema.uiNoFuture?today():'9999-12-31'}"`:schema.format==='date-time'?'min="0001-01-01T00:00" max="9999-12-31T23:59"':''} ${['integer','number'].includes(schema.type)?`inputmode="${schema.type==='integer'?'numeric':'decimal'}"`:''} value="${escape(value)}" placeholder="${escape(placeholder)}" autocomplete="off">`;
 }
@@ -149,13 +150,14 @@ function format(value,key='') {
  return String(value);
 }
 function headerHTML(cols,sorting=[]) { return `<tr>${cols.map(([key])=>{const index=sorting.findIndex(x=>x.field===key);const active=sorting[index];return `<th class="sortable" aria-sort="${active?(active.direction==='ASC'?'ascending':'descending'):'none'}"><button type="button" data-sort="${escape(key)}" title="Сортировать: ${escape(labels[key])}. Shift — добавить поле">${escape(labels[key])} ${active?(active.direction==='ASC'?'↑':'↓')+(sorting.length>1?index+1:''):''}</button></th>`;}).join('')}<th>Действия</th></tr>`; }
-function filterDefs() {return columns().flatMap(([field,keys])=>keys.map(key=>({path:key,schema:resolve(filterSchema().properties[key]),required:false,label:labels[field]+(key.endsWith('From')?' · от':key.endsWith('To')?' · до':keys[0].includes('Contains')?' · содержит':'')})));}
+function searchFieldSchema(key){const schema=resolve(filterSchema().properties[key]);return {...schema,uiAllowNull:schema.nullable===true};}
+function filterDefs() {return columns().flatMap(([field,keys])=>keys.map(key=>({path:key,schema:searchFieldSchema(key),required:false,label:labels[field]+(key.endsWith('From')?' · от':key.endsWith('To')?' · до':keys[0].includes('Contains')?' · содержит':'')})));}
 function renderList() {
  const title=entity==='tickets'?'Билеты':'Люди';document.title=`SOA · ${title}`;
  const state=states[entity];
  app.innerHTML=`<div class="page-head"><h1>${title}</h1><button type="button" class="primary" id="create">${entity==='tickets'?'Создать билет':'Создать человека'}</button></div>
  <form class="search" id="quick-search"><label>Поиск по полю<select name="quick-field">${columns().map(([key])=>`<option value="${escape(key)}" ${key===(entity==='tickets'?'name':'id')?'selected':''}>${escape(labels[key])}</option>`).join('')}</select></label><label>Значение<span id="quick-input"></span></label><button class="primary" type="submit">Найти</button></form>
- <div class="list-tools"><details><summary>Фильтры${Object.keys(state.filter).length?' ('+Object.keys(state.filter).length+')':''}</summary><form id="filters"><div class="filter-grid">${filterDefs().map(def=>fieldHTML(def,state.filter[def.path]??'')).join('')}</div><div class="actions"><button type="submit" class="primary">Применить</button><button type="button" id="reset">Сбросить</button></div></form></details>
+ <div class="list-tools"><details><summary>Фильтры${Object.keys(state.filter).length?' ('+Object.keys(state.filter).length+')':''}</summary><form id="filters"><div class="filter-grid">${filterDefs().map(def=>fieldHTML(def,state.filter[def.path]===undefined?'':state.filter[def.path])).join('')}</div><div class="actions"><button type="submit" class="primary">Применить</button><button type="button" id="reset">Сбросить</button></div></form></details>
  <details><summary>Ещё</summary><div class="actions"><button type="button" id="reload">Обновить</button></div>${entity==='tickets'?'<div class="actions"><button type="button" id="sum">Сумма цен</button><button type="button" id="average">Средняя цена</button><button type="button" id="count-person">Количество по человеку</button></div><div id="statistics-result" class="message" aria-live="polite"></div>':''}</details></div>
  <div id="list-message" class="message" aria-live="polite"></div><p class="hint">Сортировка — нажмите заголовок. Несколько полей — Shift + нажатие.</p>
  <div class="table-wrap" tabindex="0" aria-label="Таблица: ${title}"><table id="data-table"><thead>${headerHTML(columns(),state.sort)}</thead><tbody id="rows"><tr><td class="empty" colspan="${columns().length+1}">Загрузка…</td></tr></tbody></table></div>
@@ -168,10 +170,10 @@ function renderList() {
  $('#previous').onclick=()=>{if(state.page>0){state.page--;loadList();}};
  $('#next').onclick=()=>{state.page++;loadList();};
  attachSorting();renderQuickInput();$('#quick-search').elements['quick-field'].onchange=renderQuickInput;
- $('#quick-search').onsubmit=event=>{event.preventDefault();try{const field=event.currentTarget.elements['quick-field'].value;const col=columns().find(x=>x[0]===field);const schema=resolve(filterSchema().properties[col[1][0]]);const value=readValue(event.currentTarget.elements['quick-value'].value,schema,true);const filters=collect($('#filters'));for(const key of col[1])filters[key]=value;state.filter=filters;state.page=0;renderList();loadList();}catch(error){message($('#list-message'),error.message);}};
+ $('#quick-search').onsubmit=event=>{event.preventDefault();try{const field=event.currentTarget.elements['quick-field'].value;const col=columns().find(x=>x[0]===field);const schema=searchFieldSchema(col[1][0]);const value=readValue(event.currentTarget.elements['quick-value'].value,schema,true);const filters=collect($('#filters'));for(const key of col[1])filters[key]=value;state.filter=filters;state.page=0;renderList();loadList();}catch(error){message($('#list-message'),error.message);}};
  if(entity==='tickets'){$('#sum').onclick=()=>statistic('/tickets/price/sum','Сумма цен');$('#average').onclick=()=>statistic('/tickets/price/average','Средняя цена');$('#count-person').onclick=countPersonForm;}
 }
-function renderQuickInput(){const field=$('#quick-search').elements['quick-field'].value;const col=columns().find(x=>x[0]===field);const schema=filterSchema().properties[col[1][0]];$('#quick-input').innerHTML=inputHTML({path:'quick-value',schema,required:true,label:'Значение для поиска'});}
+function renderQuickInput(){const field=$('#quick-search').elements['quick-field'].value;const col=columns().find(x=>x[0]===field);const schema=searchFieldSchema(col[1][0]);$('#quick-input').innerHTML=inputHTML({path:'quick-value',schema,required:true,label:'Значение для поиска'});}
 function attachSorting(){ $$('[data-sort]',app).forEach(button=>button.onclick=event=>{const state=states[entity];const key=button.dataset.sort;const old=state.sort.find(x=>x.field===key);const next={field:key,direction:old?.direction==='ASC'?'DESC':'ASC'};state.sort=event.shiftKey?[...state.sort.filter(x=>x.field!==key),next]:[next];state.page=0;const header=$('#data-table thead');header.innerHTML=headerHTML(columns(),state.sort);attachSorting();loadList();}); }
 async function loadList(){
  listController?.abort();listController=new AbortController();const version=++generation;const current=entity;const state=states[current];
