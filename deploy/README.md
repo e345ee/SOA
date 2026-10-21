@@ -34,3 +34,11 @@ minimum of 1 ruble: max(1, originalPrice * (1 - discount / 100)). A 100% discoun
 therefore creates a ticket priced at 1 ruble and returns 201. Calculating the
 percentage in double precision avoids overflow for valid large float prices.
 The approved API schemas and Ticket Service price validation remain unchanged.
+
+The integration includes upstream main through 7a28975984d7faa8af0bb41fb3ec3612c8807cfb.
+It retains LocalDate birthdays, the birthday/type response names, Russian generic
+server errors and explicit validation of ranges, sort fields and directions.
+Search uses the schema-based whitelist instead of duplicate typed filter records:
+this preserves explicit type:null filters and contract page limits. Booking emits
+person.location, not locationDto. Nullable equality and date conversion remain in
+CriteriaSearch, including correct handling of creationDate ranges.

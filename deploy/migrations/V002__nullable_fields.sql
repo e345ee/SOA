@@ -1,4 +1,3 @@
--- Apply once, transactionally. Preserve all existing rows and references.
 BEGIN;
 DO $$ BEGIN
  IF EXISTS (SELECT 1 FROM tickets WHERE y < -2147483648 OR y > 2147483647) THEN

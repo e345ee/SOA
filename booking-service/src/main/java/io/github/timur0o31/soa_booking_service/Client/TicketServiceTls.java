@@ -11,7 +11,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.Arrays;
 
-/** Client-specific trust configuration; never changes JVM-wide TLS settings. */
+
 final class TicketServiceTls {
     private TicketServiceTls() {
     }
@@ -29,7 +29,7 @@ final class TicketServiceTls {
     static SSLContext loadTrustStore(Path storePath, Path passwordFile, String type)
             throws IOException, GeneralSecurityException {
         String secret = Files.readString(passwordFile);
-        // Password files may end in a newline; preserve all other password characters.
+
         if (secret.endsWith("\n")) secret = secret.substring(0, secret.length() - 1);
         if (secret.endsWith("\r")) secret = secret.substring(0, secret.length() - 1);
         char[] password = secret.toCharArray();

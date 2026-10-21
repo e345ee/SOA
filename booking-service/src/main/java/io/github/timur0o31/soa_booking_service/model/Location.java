@@ -9,6 +9,6 @@ import lombok.Setter;
 public class Location {
     private Integer x;
     private Integer y;
-    private String name; //Поле может быть null
+    private String name;
 
 }

@@ -18,29 +18,29 @@ import java.util.Date;
 public class Ticket {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; //Значение поля должно быть больше 0, Значение этого поля должно быть уникальным, Значение этого поля должно генерироваться автоматически
+    private Long id;
     @Column(nullable = false)
-    private String name; //Поле не может быть null, Строка не может быть пустой
+    private String name;
 
     @Embedded
     @NotNull
-    private Coordinates coordinates;//Поле не может быть null
+    private Coordinates coordinates;
 
     @NotNull
     @CreationTimestamp
-    private Date creationDate; //Поле не может быть null, Значение этого поля должно генерироваться автоматически
+    private Date creationDate;
 
     @Positive
     @NotNull
-    private Float price; //Поле не может быть null, Значение поля должно быть больше 0
+    private Float price;
 
     @Enumerated(EnumType.STRING)
-    private TicketType type; //Поле  может быть null
+    private TicketType type;
 
     @NotNull
     @ManyToOne
     @JoinColumn(name = "person_id")
-    private Person person; //Поле не может быть null
+    private Person person;
 
     @NotNull
     private Long eventId;

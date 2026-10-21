@@ -99,7 +99,7 @@ public class CriteriaSearch {
     }
     private static Path<?> path(Path<?> root, String property) {
         Path<?> p = root;
-        for (String part : property.split("\\.")) { //чтобы у location.x, можно было взять x
+        for (String part : property.split("\\.")) {
             p = p.get(part);
         }
         return p;

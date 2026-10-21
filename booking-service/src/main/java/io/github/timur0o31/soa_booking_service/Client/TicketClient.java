@@ -86,7 +86,7 @@ public class TicketClient {
         }
     }
 
-    // Eagerly validate required configuration and trust material during application startup.
+
     void onApplicationStarted(@Observes @Initialized(ApplicationScoped.class) Object event) {
     }
 
