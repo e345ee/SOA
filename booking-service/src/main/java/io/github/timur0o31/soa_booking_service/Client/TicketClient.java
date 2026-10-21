@@ -12,7 +12,8 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.ProcessingException;
-import jakarta.ws.rs.WebApplicationException;
+import io.github.timur0o31.soa_booking_service.error.exceptions.RequestValidationException;
+import io.github.timur0o31.soa_booking_service.error.exceptions.TicketServiceException;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.ClientResponseFilter;
@@ -91,38 +92,34 @@ public class TicketClient {
 
     public Ticket getTicketById(Long ticketId){
         WebTarget target = client.target(ticketServiceUri).path("tickets/"+ticketId);
-        try {
-            Response response = target.request(MediaType.APPLICATION_JSON).get();
+        try (Response response = target.request(MediaType.APPLICATION_JSON).get()) {
             if (response.getStatus() == 404) {
                 throw new NotFoundException("Билет с id=" + ticketId + " не найден");
             }
             if (response.getStatus() != 200) {
-                throw new WebApplicationException("Первый сервис вернул HTTP "
-                                + response.getStatus(), Response.Status.BAD_GATEWAY);
+                throw new TicketServiceException("Сервис билетов вернул HTTP " + response.getStatus());
             }
-            return response.readEntity(Ticket.class);
+            return readTicket(response);
         }catch (ProcessingException e) {
-            throw new WebApplicationException("Ошибка обращения к первому сервису",
-                    e, Response.Status.BAD_GATEWAY);
+            throw new TicketServiceException("Не удалось обратиться к сервису билетов", e);
         }
     }
 
     public Ticket createTicket(TicketCreateDto ticketCreateDto){
-        WebTarget target= client.target(ticketServiceUri).path("tickets/");
-        try{
-            try (Response response = target.request(MediaType.APPLICATION_JSON).post(Entity.json(ticketCreateDto))) {
-                if (response.getStatus() == 400) {
-                    throw new RuntimeException("переданы некорректные данные");
-                }
-                if (response.getStatus() != 201) {
-                    throw new WebApplicationException("Первый сервис вернул HTTP "
-                            + response.getStatus(), Response.Status.BAD_GATEWAY);
-                }
-                return response.readEntity(Ticket.class);
+        WebTarget target = client.target(ticketServiceUri).path("tickets/");
+        try (Response response = target.request(MediaType.APPLICATION_JSON).post(Entity.json(ticketCreateDto))) {
+            if (response.getStatus() == 400) {
+                throw new RequestValidationException("ticket", "Сервис билетов отклонил данные нового билета");
             }
-        }catch (ProcessingException e) {
-            throw new WebApplicationException("Ошибка обращения к первому сервису",
-                    e, Response.Status.BAD_GATEWAY);
+            if (response.getStatus() == 404) {
+                throw new NotFoundException("Человек с id=" + ticketCreateDto.getPersonId() + " не найден");
+            }
+            if (response.getStatus() != 201) {
+                throw new TicketServiceException("Сервис билетов вернул HTTP " + response.getStatus());
+            }
+            return readTicket(response);
+        } catch (ProcessingException e) {
+            throw new TicketServiceException("Не удалось обратиться к сервису билетов", e);
         }
     }
 
@@ -140,20 +137,23 @@ public class TicketClient {
             WebTarget target = client.target(ticketServiceUri).path("tickets/search");
             try (Response response = target.request(MediaType.APPLICATION_JSON).post(Entity.json(body))) {
                 if (response.getStatus() != 200) {
-                    throw new WebApplicationException("Ошибка поиска: первый сервис вернул HTTP " + response.getStatus(), Response.Status.BAD_GATEWAY);
+                    throw new TicketServiceException("Ошибка поиска: сервис билетов вернул HTTP " + response.getStatus());
                 }
                 TicketPageResponseDto result = response.readEntity(TicketPageResponseDto.class);
 
                 if (result == null || result.getContent() == null) {
-                    throw new WebApplicationException("Некорректный ответ поиска", Response.Status.BAD_GATEWAY);
+                    throw new TicketServiceException("Сервис билетов вернул некорректный ответ поиска");
                 }
 
                 for (Ticket ticket : result.getContent()) {
+                    if (ticket == null || ticket.getId() == null) {
+                        throw new TicketServiceException("Сервис билетов вернул билет без идентификатора");
+                    }
                     ticketIds.add(ticket.getId());
                 }
                 hasNext = result.getHasNext() != null ? result.getHasNext() : result.getContent().size() == size;
             } catch (ProcessingException e) {
-                throw new WebApplicationException("Ошибка обращения к первому сервису", e, Response.Status.BAD_GATEWAY);
+                throw new TicketServiceException("Не удалось обратиться к сервису билетов", e);
             }
             page++;
         }
@@ -168,17 +168,23 @@ public class TicketClient {
                 throw new NotFoundException("Билет с id=" + ticketId + " не найден");
             }
             if (response.getStatus() != 204) {
-                throw new WebApplicationException("Ошибка удаления: первый сервис вернул HTTP "
-                                + response.getStatus(), Response.Status.BAD_GATEWAY);
+                throw new TicketServiceException("Ошибка удаления: сервис билетов вернул HTTP " + response.getStatus());
             }
         } catch (ProcessingException e) {
-            throw new WebApplicationException(
-                    "Ошибка обращения к первому сервису", e, Response.Status.BAD_GATEWAY);
+            throw new TicketServiceException("Не удалось обратиться к сервису билетов", e);
         }
+    }
+
+    private Ticket readTicket(Response response) {
+        Ticket ticket = response.readEntity(Ticket.class);
+        if (ticket == null) {
+            throw new TicketServiceException("Сервис билетов вернул пустой ответ");
+        }
+        return ticket;
     }
 
     @PreDestroy
     public void destroy(){
-        if (client != null) client.close();
+        if(client != null) client.close();
     }
 }

@@ -15,6 +15,7 @@ import se.ifmo.ru.mapper.PersonMapper;
 import se.ifmo.ru.model.Person;
 import se.ifmo.ru.repository.PersonRepository;
 import se.ifmo.ru.utils.PersonSearchValidator;
+import se.ifmo.ru.utils.ApiValidation;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -41,6 +42,7 @@ public class PersonService {
 
     @Transactional
     public Person savePersonEntity(PersonCreateDto personCreateDto) {
+        ApiValidation.birthday(personCreateDto.birthday());
         Person person = personMapper.toPerson(personCreateDto);
         return personRepository.insert(person);
     }
@@ -58,6 +60,7 @@ public class PersonService {
     public PersonResponseDto updatePerson(Long personId, PersonCreateDto personCreateDto) {
         Person person = personRepository.findById(personId).orElseThrow(
                 () -> new ResourceNotFoundException("person with id " + personId + " not found"));
+        ApiValidation.birthday(personCreateDto.birthday());
         personMapper.updatePersonFromDto(personCreateDto, person);
         Person newPerson = personRepository.update(person);
         return personMapper.toPersonResponseDto(newPerson);
@@ -79,22 +82,14 @@ public class PersonService {
         }
         if (sorts.stream().noneMatch(s -> s.property().equals("id")))
             sorts.add(Sort.asc("id"));
-        PageRequest page = PageRequest.ofPage(requestDto.getPage() + 1).size(Math.toIntExact(requestDto.getSize()));
-        List<Person> people = personRepository.search(filters,page, sorts);
-        List<PersonResponseDto> content = people.stream().map(person -> personMapper.toPersonResponseDto(person)).toList();
         Long total = personRepository.count(filters);
+        List<Person> people = requestDto.getPage() > total / requestDto.getSize() ? List.of() : personRepository.search(filters,PageRequest.ofPage(requestDto.getPage()+1).size(Math.toIntExact(requestDto.getSize())),sorts);
+        List<PersonResponseDto> content = people.stream().map(person -> personMapper.toPersonResponseDto(person)).toList();
         return ResponsePaginationDto.ans(content,requestDto.getPage(),requestDto.getSize(),total);
     }
 
     public ResponsePaginationDto<PersonResponseDto> getPersons(long page, int size) {
-        List<Sort<Person>> sorts = List.of(Sort.asc("id"));
-        List<PersonResponseDto> content = personRepository
-                .search(Map.of(), PageRequest.ofPage(page + 1).size(size), sorts)
-                .stream()
-                .map(personMapper::toPersonResponseDto)
-                .toList();
-        long total = personRepository.count(Map.of());
-        return ResponsePaginationDto.ans(content, page, (long) size, total);
+        return search(new SearchDto(Map.of(),page,(long)size,null));
     }
 
     public Person getPersonById(Long personId) {

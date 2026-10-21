@@ -15,6 +15,5 @@ public class Coordinates {
     @DecimalMin(value = "-495", inclusive = false)
     private Double x;
     @Min(-262)
-    @Column(nullable = false)
-    private Long y;
+    private Integer y;
 }

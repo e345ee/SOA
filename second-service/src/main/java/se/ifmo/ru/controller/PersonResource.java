@@ -11,6 +11,9 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import se.ifmo.ru.dto.request.PersonCreateDto;
+import se.ifmo.ru.dto.request.PersonInputDto;
+import se.ifmo.ru.dto.request.TicketUpdateDto;
+import static se.ifmo.ru.utils.ApiValidation.id;
 import se.ifmo.ru.dto.request.SearchDto;
 import se.ifmo.ru.dto.response.PersonResponseDto;
 import se.ifmo.ru.dto.response.TicketResponseDto;
@@ -38,20 +41,23 @@ public class PersonResource {
     }
     @DELETE
     @Path("/{id}")
-    public Response deletePerson(@PathParam("id") Long id) {
+    public Response deletePerson(@PathParam("id") String idRaw) {
+        Long id = id(idRaw);
         personService.deletePersonById(id);
         return Response.noContent().build();
     }
     @GET
     @Path("/{id}")
-    public Response getPersonById(@PathParam("id") Long id){
+    public Response getPersonById(@PathParam("id") String idRaw){
+        Long id = id(idRaw);
         PersonResponseDto dto = personService.findById(id);
         return Response.ok(dto).build();
     }
     @PUT
     @Path("/{id}")
-    public Response updatePerson(@PathParam("id") Long id, @NotNull @Valid PersonCreateDto dto) {
-        PersonResponseDto responseDto = personService.updatePerson(id, dto);
+    public Response updatePerson(@PathParam("id") String idRaw, @NotNull @Valid PersonInputDto dto) {
+        Long id = id(idRaw);
+        PersonResponseDto responseDto = personService.updatePerson(id, dto.toCreate());
         return Response.ok(responseDto).build();
     }
 

@@ -32,7 +32,7 @@ public class CriteriaSearch {
         }
         cq.select(root).where(whereFilters(cb,root, filters)).orderBy(orderBy);
         return statelessSession.createQuery(cq)
-                .setFirstResult((int) (pageRequest.page()-1)*pageRequest.size())
+                .setFirstResult(Math.toIntExact(Math.multiplyExact(pageRequest.page()-1, (long)pageRequest.size())))
                 .setMaxResults(pageRequest.size())
                 .getResultList();
     }
@@ -71,6 +71,7 @@ public class CriteriaSearch {
             return cb.like(cb.lower(column), pattern, '\\');
         }
         Path<?> column = path(root, key);
+        if(value == null)return cb.isNull(column);
         Object typedValue = convert(column.getJavaType(), value);
         return cb.equal(column, typedValue);
     }
@@ -81,6 +82,7 @@ public class CriteriaSearch {
                 .replace("_", "\\_");
     }
     private static Object convert(Class<?> type, Object raw) {
+        if(type == java.sql.Timestamp.class && raw instanceof java.util.Date date)return new java.sql.Timestamp(date.getTime());
         if (type.isInstance(raw)) {
             return raw;
         }

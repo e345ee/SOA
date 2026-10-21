@@ -9,10 +9,14 @@ import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
 
-@Mapper(componentModel = "jakarta-cdi")
+@Mapper(unmappedTargetPolicy = org.mapstruct.ReportingPolicy.ERROR, componentModel = "jakarta-cdi")
 public interface TicketMapper {
+    @org.mapstruct.Mapping(target="id", ignore=true)
+    @org.mapstruct.Mapping(target="creationDate", ignore=true)
+    @org.mapstruct.Mapping(target="person", ignore=true)
     Ticket toTicket(TicketCreateDto ticketCreateDto);
     TicketResponseDto toTicketResponseDto(Ticket ticket);
+    @org.mapstruct.Mapping(target="personId", ignore=true)
     TicketCreateDto toTicketCreateDto(Ticket ticket);
     default PersonResponseDto toPersonResponseDto(Person person){
         return Mappers.getMapper(PersonMapper.class).toPersonResponseDto(person);

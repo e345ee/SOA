@@ -6,6 +6,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import se.ifmo.ru.dto.request.PersonCreateDto;
+import se.ifmo.ru.dto.request.PersonInputDto;
+import se.ifmo.ru.dto.request.TicketUpdateDto;
+import se.ifmo.ru.utils.ApiValidation;
 import se.ifmo.ru.error.exceptions.RequestValidationException;
 import se.ifmo.ru.error.exceptions.ResourceNotFoundException;
 import se.ifmo.ru.dto.request.SearchDto;
@@ -41,7 +44,8 @@ public class TicketService {
     }
     @Transactional
     public TicketResponseDto saveTicket(TicketCreateDto ticketCreateDto) {
-        Person person = parsePerson(ticketCreateDto);
+        ApiValidation.numbers(ticketCreateDto.coordinates().x(), ticketCreateDto.price());
+        Person person = parsePerson(ticketCreateDto.personId(), ticketCreateDto.person());
         Ticket ticket = ticketMapper.toTicket(ticketCreateDto);
         ticket.setPerson(person);
         return ticketMapper.toTicketResponseDto(ticketRepository.insert(ticket));
@@ -56,27 +60,28 @@ public class TicketService {
     }
 
     @Transactional
-    public TicketResponseDto updateTicket(Long ticketId, TicketCreateDto ticketCreateDto) {
+    public TicketResponseDto updateTicket(Long ticketId, TicketUpdateDto ticketCreateDto) {
         Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(
                 () -> new ResourceNotFoundException("Ticket with id " + ticketId + " not found"));
-        Person person = parsePerson(ticketCreateDto);
+        ApiValidation.numbers(ticketCreateDto.coordinates().x(), ticketCreateDto.price());
+        Person person = parsePerson(null, ticketCreateDto.person());
         ticketMapper.updateTicket(ticketCreateDto, ticket);
         ticket.setPerson(person);
         return ticketMapper.toTicketResponseDto(ticketRepository.update(ticket));
     }
 
-    private Person parsePerson(TicketCreateDto ticketCreateDto) {
-        Long personId = ticketCreateDto.personId();
-        PersonCreateDto personDto = ticketCreateDto.person();
+    private Person parsePerson(Long personId, PersonInputDto personDto) {
         if (personId == null && personDto == null)
             throw new RequestValidationException("person", "Укажите personId или person");
         if (personId != null && personDto != null)
             throw new RequestValidationException("person", "Нельзя одновременно указывать personId и person");
         if (personId != null) return personService.getPersonById(personId);
-        return personService.savePersonEntity(personDto);
+        ApiValidation.birthday(personDto.birthday());
+        if(personDto.id()!=null)return personService.getPersonById(personDto.id());
+        return personService.savePersonEntity(personDto.toCreate());
     }
 
-    public Long countByPerson(PersonCreateDto person) {
+    public Long countByPerson(PersonInputDto person) {
         return ticketStatisticsService.countByPerson(person);
     }
 
@@ -100,24 +105,17 @@ public class TicketService {
         if (sorts.stream().noneMatch(sort -> sort.property().equals("id"))) {
             sorts.add(Sort.asc("id"));
         }
-        List<TicketResponseDto> content = ticketRepository
+        long total = ticketRepository.count(filters);
+        List<TicketResponseDto> content = dto.getPage() > total / dto.getSize() ? List.of() : ticketRepository
                 .search(filters, PageRequest.ofPage(dto.getPage() + 1).size(dto.getSize().intValue()), sorts)
                 .stream()
                 .map(ticketMapper::toTicketResponseDto)
                 .toList();
-        long total = ticketRepository.count(filters);
         return ResponsePaginationDto.ans(content, dto.getPage(), dto.getSize(), total);
     }
 
     public ResponsePaginationDto<TicketResponseDto> getTickets(long page, int size) {
-        List<Sort<Ticket>> sorts = List.of(Sort.asc("id"));
-        List<TicketResponseDto> content = ticketRepository
-                .search(Map.of(), PageRequest.ofPage(page + 1).size(size), sorts)
-                .stream()
-                .map(ticketMapper::toTicketResponseDto)
-                .toList();
-        Long total = ticketRepository.count(Map.of());
-        return ResponsePaginationDto.ans(content, page, (long) size, total);
+        return search(new SearchDto(Map.of(),page,(long)size,null));
     }
 
 }

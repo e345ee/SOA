@@ -9,6 +9,6 @@ import se.ifmo.ru.error.exceptions.ResourceConflictException;
 public class ResourceConflictExceptionMapper implements ExceptionMapper<ResourceConflictException> {
     @Override
     public Response toResponse(ResourceConflictException exception) {
-        return ErrorResponses.build(Response.Status.CONFLICT, exception.getMessage());
+        return ErrorResponses.build(Response.Status.BAD_REQUEST, exception.getMessage());
     }
 }
