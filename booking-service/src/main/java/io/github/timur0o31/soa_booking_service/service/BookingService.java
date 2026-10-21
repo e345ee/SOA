@@ -7,7 +7,7 @@ import io.github.timur0o31.soa_booking_service.mapper.TicketMapper;
 import io.github.timur0o31.soa_booking_service.model.Ticket;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.BadRequestException;
+import io.github.timur0o31.soa_booking_service.error.exceptions.RequestValidationException;
 import jakarta.ws.rs.NotFoundException;
 import java.util.List;
 
@@ -18,6 +18,15 @@ public class BookingService {
     @Inject
     TicketMapper ticketMapper;
     public TicketResponseDto createTicket(Long ticketId, Long personId, Float discount){
+        if (ticketId == null || ticketId <= 0) {
+            throw new RequestValidationException("ticketId", "Идентификатор должен быть положительным");
+        }
+        if (personId == null || personId <= 0) {
+            throw new RequestValidationException("personId", "Идентификатор должен быть положительным");
+        }
+        if (discount == null || !Float.isFinite(discount) || discount < 0 || discount >= 100) {
+            throw new RequestValidationException("discount", "Скидка должна быть от 0 включительно до 100 исключительно");
+        }
         Ticket ticket = ticketClient.getTicketById(ticketId);
         TicketCreateDto ticketCreateDto = ticketMapper.toTicketCreateDto(ticket);
         ticketCreateDto.setPersonId(personId);
@@ -27,7 +36,7 @@ public class BookingService {
     }
     public void cancelEvent(Long eventId) {
         if (eventId == null || eventId <= 0) {
-            throw new BadRequestException("Некорректный eventId");
+            throw new RequestValidationException("eventId", "Идентификатор должен быть положительным");
         }
         List<Long> ticketIds = ticketClient.getAllTicketIdsByEventId(eventId);
         if (ticketIds.isEmpty()) {
