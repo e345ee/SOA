@@ -7,11 +7,11 @@ import io.github.timur0o31.soa_booking_service.mapper.TicketMapper;
 import io.github.timur0o31.soa_booking_service.model.Ticket;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import io.github.timur0o31.soa_booking_service.error.exceptions.RequestValidationException;
-import jakarta.ws.rs.NotFoundException;
-import java.util.List;
 
 @ApplicationScoped
+@Transactional(Transactional.TxType.NOT_SUPPORTED)
 public class BookingService {
     private static final float MINIMUM_TICKET_PRICE = 1.0f;
 
@@ -42,15 +42,6 @@ public class BookingService {
         return ticketMapper.toTicketResponseDto(ticketResponse);
     }
     public void cancelEvent(Long eventId) {
-        if (eventId == null || eventId <= 0) {
-            throw new RequestValidationException("eventId", "Идентификатор должен быть положительным");
-        }
-        List<Long> ticketIds = ticketClient.getAllTicketIdsByEventId(eventId);
-        if (ticketIds.isEmpty()) {
-            throw new NotFoundException("Билеты на событие не найдены");
-        }
-        for (Long ticketId : ticketIds) {
-            ticketClient.deleteTicketById(ticketId);
-        }
+        ticketClient.cancelEvent(eventId);
     }
 }

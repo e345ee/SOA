@@ -1,7 +1,6 @@
 package io.github.timur0o31.soa_booking_service.Client;
 
 import io.github.timur0o31.soa_booking_service.dto.TicketCreateDto;
-import io.github.timur0o31.soa_booking_service.dto.TicketPageResponseDto;
 import io.github.timur0o31.soa_booking_service.model.Ticket;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -27,9 +26,6 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @ApplicationScoped
 public class TicketClient {
@@ -123,55 +119,17 @@ public class TicketClient {
         }
     }
 
-    public List<Long> getAllTicketIdsByEventId(Long eventId) {
-        List<Long> ticketIds = new ArrayList<>();
-        int page = 0;
-        int size = 100;
-        boolean hasNext = true;
-        while (hasNext) {
-            Map<String, Object> body = Map.of(
-                    "filter", Map.of("eventId", eventId),
-                    "page", page,
-                    "size", size,
-                    "sort", List.of(Map.of("field", "id", "direction", "ASC")));
-            WebTarget target = client.target(ticketServiceUri).path("tickets/search");
-            try (Response response = target.request(MediaType.APPLICATION_JSON).post(Entity.json(body))) {
-                if (response.getStatus() != 200) {
-                    throw new TicketServiceException("Ошибка поиска: сервис билетов вернул HTTP " + response.getStatus());
-                }
-                TicketPageResponseDto result = response.readEntity(TicketPageResponseDto.class);
-
-                if (result == null || result.getContent() == null) {
-                    throw new TicketServiceException("Сервис билетов вернул некорректный ответ поиска");
-                }
-
-                for (Ticket ticket : result.getContent()) {
-                    if (ticket == null || ticket.getId() == null) {
-                        throw new TicketServiceException("Сервис билетов вернул билет без идентификатора");
-                    }
-                    ticketIds.add(ticket.getId());
-                }
-                hasNext = result.getHasNext() != null ? result.getHasNext() : result.getContent().size() == size;
-            } catch (ProcessingException e) {
-                throw new TicketServiceException("Не удалось обратиться к сервису билетов", e);
-            }
-            page++;
-        }
-
-        return ticketIds;
-    }
-
-    public void deleteTicketById(Long ticketId) {
-        WebTarget target = client.target(ticketServiceUri).path("tickets/" + ticketId);
-        try (Response response = target.request().delete()) {
+    public void cancelEvent(Long eventId) {
+        WebTarget target = client.target(ticketServiceUri).path("tickets/cancel-event/" + eventId);
+        try (Response response = target.request().post(null)) {
             if (response.getStatus() == 404) {
-                throw new NotFoundException("Билет с id=" + ticketId + " не найден");
+                throw new NotFoundException("Билеты на событие не найдены");
             }
             if (response.getStatus() != 204) {
-                throw new TicketServiceException("Ошибка удаления: сервис билетов вернул HTTP " + response.getStatus());
+                throw new TicketServiceException("Ошибка отмены: сервис билетов вернул HTTP " + response.getStatus());
             }
-        } catch (ProcessingException e) {
-            throw new TicketServiceException("Не удалось обратиться к сервису билетов", e);
+        } catch (ProcessingException exception) {
+            throw new TicketServiceException("Не удалось обратиться к сервису билетов", exception);
         }
     }
 

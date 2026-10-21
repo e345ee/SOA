@@ -1,4 +1,6 @@
 package se.ifmo.ru.dto.request;
 
-public record SortDto(String field, String direction) {
-}
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+
+public record SortDto(@NotNull String field, @NotNull @Pattern(regexp = "ASC|DESC") String direction) {}

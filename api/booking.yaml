@@ -1,7 +1,7 @@
 openapi: 3.0.0
 
 info:
-  version: 1.0.1
+  version: 1.1.0
   title: Booking Service API
 
 servers:
@@ -303,7 +303,10 @@ paths:
     post:
       tags:
         - Booking
-      description: отменить указанное событие, удалив все билеты на него
+      description: >-
+        Отменить событие, отправив одну HTTPS-команду в Ticket Service.
+        Все билеты события удаляются одним DELETE в программной JTA-транзакции
+        первого сервиса. При ошибке удаление полностью откатывается.
       parameters:
         - name: event-id
           in: path

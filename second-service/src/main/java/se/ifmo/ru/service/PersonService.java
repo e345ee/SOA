@@ -9,18 +9,19 @@ import se.ifmo.ru.error.exceptions.ResourceConflictException;
 import se.ifmo.ru.error.exceptions.ResourceNotFoundException;
 import se.ifmo.ru.dto.request.PersonCreateDto;
 import se.ifmo.ru.dto.request.SearchDto;
+import se.ifmo.ru.dto.request.PersonSearchFilter;
 import se.ifmo.ru.dto.response.PersonResponseDto;
 import se.ifmo.ru.dto.response.ResponsePaginationDto;
 import se.ifmo.ru.mapper.PersonMapper;
 import se.ifmo.ru.model.Person;
 import se.ifmo.ru.repository.PersonRepository;
 import se.ifmo.ru.utils.PersonSearchValidator;
-import se.ifmo.ru.utils.ApiValidation;
 
 import java.util.*;
 import java.util.logging.Logger;
 
 @ApplicationScoped
+@Transactional(Transactional.TxType.REQUIRED)
 public class PersonService {
     @Inject
     private PersonRepository personRepository;
@@ -34,19 +35,16 @@ public class PersonService {
                 () -> new ResourceNotFoundException("person with id " + personId + " not found"));
         return personMapper.toPersonResponseDto(person);
     }
-    @Transactional
     public PersonResponseDto savePerson(PersonCreateDto personCreateDto) {
         Person person = savePersonEntity(personCreateDto);
         return personMapper.toPersonResponseDto(person);
     }
 
-    @Transactional
+    @Transactional(Transactional.TxType.MANDATORY)
     public Person savePersonEntity(PersonCreateDto personCreateDto) {
-        ApiValidation.birthday(personCreateDto.birthday());
         Person person = personMapper.toPerson(personCreateDto);
         return personRepository.insert(person);
     }
-    @Transactional
     public void deletePersonById(Long personId){
         if (personRepository.findById(personId).isPresent()) {
             long count = ticketStatisticsService.countByPerson(personId);
@@ -56,22 +54,20 @@ public class PersonService {
             throw new ResourceNotFoundException("person with id " + personId + " not found");
         }
     }
-    @Transactional
     public PersonResponseDto updatePerson(Long personId, PersonCreateDto personCreateDto) {
         Person person = personRepository.findById(personId).orElseThrow(
                 () -> new ResourceNotFoundException("person with id " + personId + " not found"));
-        ApiValidation.birthday(personCreateDto.birthday());
         personMapper.updatePersonFromDto(personCreateDto, person);
         Person newPerson = personRepository.update(person);
         return personMapper.toPersonResponseDto(newPerson);
     }
 
-    public ResponsePaginationDto<PersonResponseDto> search(SearchDto requestDto) {
+    public ResponsePaginationDto<PersonResponseDto> search(SearchDto<PersonSearchFilter> requestDto) {
         Map<String, Object> filters = PersonSearchValidator.validateSearch(requestDto);
         List<Sort<Person>> sorts = new ArrayList<>();
         if (requestDto.getSort() != null) {
             for (var item : requestDto.getSort()) {
-                String field = PersonSearchValidator.field(item.field());
+                String field = item.field();
                 String direction = item.direction();
                 if ("DESC".equalsIgnoreCase(direction)) {
                     sorts.add(Sort.desc(field));
@@ -89,7 +85,7 @@ public class PersonService {
     }
 
     public ResponsePaginationDto<PersonResponseDto> getPersons(long page, int size) {
-        return search(new SearchDto(Map.of(),page,(long)size,null));
+        return search(new SearchDto<>(null, page, (long) size, null));
     }
 
     public Person getPersonById(Long personId) {

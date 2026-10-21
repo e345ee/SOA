@@ -1,7 +1,7 @@
 openapi: 3.0.0
 
 info:
-  version: 1.0.0
+  version: 1.1.0
   title: Ticket Service API
 
 servers:
@@ -1022,3 +1022,48 @@ paths:
                 title: Bad Request
                 status: 400
                 detail: некорректные данные
+
+  /tickets/cancel-event/{event-id}:
+    post:
+      tags:
+      - Tickets
+      description: Удалить все билеты события одним DELETE в программной JTA-транзакции
+        Ticket Service. Booking Service вызывает эту команду по HTTPS. При ошибке вся
+        операция откатывается.
+      parameters:
+      - name: event-id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        '204':
+          description: Все билеты указанного события успешно удалены
+        '400':
+          description: Некорректный идентификатор события
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
+        '404':
+          description: Билеты указанного события не найдены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Not Found
+                status: 404
+                detail: Билеты с eventId=13 не найден
+        '500':
+          description: Удаление не завершено; изменения транзакции откатились.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

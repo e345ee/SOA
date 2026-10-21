@@ -16,9 +16,6 @@ for name in ("ticket", "booking"):
 generated = {
     root / "frontend/assets/contracts.json": json.dumps(specs, ensure_ascii=False, separators=(",", ":")),
 }
-generated[root / "second-service/src/main/resources/api-schemas.json"] = json.dumps(
-    specs["ticket"]["components"]["schemas"], ensure_ascii=False, indent=2
-)
 
 outdated = []
 for path, content in generated.items():

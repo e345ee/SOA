@@ -2,23 +2,12 @@ package se.ifmo.ru.controller;
 
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.*;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.UriInfo;
-import se.ifmo.ru.dto.request.PersonCreateDto;
-import se.ifmo.ru.dto.request.PersonInputDto;
-import se.ifmo.ru.dto.request.TicketUpdateDto;
-import static se.ifmo.ru.utils.ApiValidation.id;
-import se.ifmo.ru.dto.request.SearchDto;
+import jakarta.ws.rs.core.*;
+import se.ifmo.ru.dto.request.*;
 import se.ifmo.ru.dto.response.PersonResponseDto;
-import se.ifmo.ru.dto.response.TicketResponseDto;
 import se.ifmo.ru.service.PersonService;
-
 import java.net.URI;
 
 @Path("/persons")
@@ -27,46 +16,42 @@ import java.net.URI;
 public class PersonResource {
     @Inject
     private PersonService personService;
+
     @GET
-    public Response getPersons(@QueryParam("page") @DefaultValue("0") String pageRaw,
-            @QueryParam("size") @DefaultValue("20") String sizeRaw) {
-        long page=se.ifmo.ru.utils.ApiValidation.page(pageRaw);int size=se.ifmo.ru.utils.ApiValidation.size(sizeRaw);
+    public Response getPersons(@QueryParam("page") @DefaultValue("0") @Min(0) Long page,
+                                @QueryParam("size") @DefaultValue("20") @Min(1) @Max(100) Integer size) {
         return Response.ok(personService.getPersons(page, size)).build();
     }
 
-    @POST
-    public Response createPerson(@NotNull @Valid PersonCreateDto personDto,@Context UriInfo uriInfo) {
-        PersonResponseDto responseDto = personService.savePerson(personDto);
-        URI location = uriInfo.getAbsolutePathBuilder().path(String.valueOf(responseDto.id())).build();
-        return Response.created(location).entity(responseDto).build();
-    }
-    @DELETE
-    @Path("/{id}")
-    public Response deletePerson(@PathParam("id") String idRaw) {
-        Long id = id(idRaw);
-        personService.deletePersonById(id);
-        return Response.noContent().build();
-    }
     @GET
     @Path("/{id}")
-    public Response getPersonById(@PathParam("id") String idRaw){
-        Long id = id(idRaw);
-        PersonResponseDto dto = personService.findById(id);
-        return Response.ok(dto).build();
+    public Response getPersonById(@PathParam("id") @Min(1) Long id) {
+        return Response.ok(personService.findById(id)).build();
     }
+
+    @POST
+    public Response createPerson(@NotNull @Valid PersonCreateDto dto, @Context UriInfo uriInfo) {
+        PersonResponseDto response = personService.savePerson(dto);
+        URI location = uriInfo.getAbsolutePathBuilder().path(String.valueOf(response.id())).build();
+        return Response.created(location).entity(response).build();
+    }
+
     @PUT
     @Path("/{id}")
-    public Response updatePerson(@PathParam("id") String idRaw, @NotNull @Valid PersonInputDto dto) {
-        Long id = id(idRaw);
-        PersonResponseDto responseDto = personService.updatePerson(id, dto.toCreate());
-        return Response.ok(responseDto).build();
+    public Response updatePerson(@PathParam("id") @Min(1) Long id, @NotNull @Valid PersonInputDto dto) {
+        return Response.ok(personService.updatePerson(id, dto.toCreate())).build();
+    }
+
+    @DELETE
+    @Path("/{id}")
+    public Response deletePerson(@PathParam("id") @Min(1) Long id) {
+        personService.deletePersonById(id);
+        return Response.noContent().build();
     }
 
     @POST
     @Path("/search")
-    public Response searchPerson(SearchDto searchDto) {
-        return Response.ok(personService.search(searchDto)).build();
+    public Response searchPersons(@NotNull @Valid SearchDto<PersonSearchFilter> dto) {
+        return Response.ok(personService.search(dto)).build();
     }
-
-
 }
