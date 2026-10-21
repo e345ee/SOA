@@ -29,7 +29,8 @@ must be supplied via external MicroProfile Config. The HTTPS URI and truststore
 are verified at startup. Never put secrets into source or disable peer validation.
 The existing VPS configuration and client-specific truststore are retained.
 
-A 100% discount cannot produce a valid Ticket because the approved Ticket schema
-requires price > 0. This combination returns the documented 400 ErrorResponse,
-with a message explaining the positive-price requirement; it never creates a
-zero-priced ticket or substitutes a different discount.
+Booking accepts discounts from 0 through 100 percent. The final sale price has a
+minimum of 1 ruble: max(1, originalPrice * (1 - discount / 100)). A 100% discount
+therefore creates a ticket priced at 1 ruble and returns 201. Calculating the
+percentage in double precision avoids overflow for valid large float prices.
+The approved API schemas and Ticket Service price validation remain unchanged.

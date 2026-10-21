@@ -13,6 +13,8 @@ import java.util.List;
 
 @ApplicationScoped
 public class BookingService {
+    private static final float MINIMUM_TICKET_PRICE = 1.0f;
+
     @Inject
     private TicketClient ticketClient;
     @Inject
@@ -30,8 +32,11 @@ public class BookingService {
         Ticket ticket = ticketClient.getTicketById(ticketId);
         TicketCreateDto ticketCreateDto = ticketMapper.toTicketCreateDto(ticket);
         ticketCreateDto.setPersonId(personId);
-        float price=ticket.getPrice()-ticket.getPrice()*discount/100f;
-        if(!Float.isFinite(price)||price<=0)throw new RequestValidationException("discount","После скидки цена должна оставаться больше нуля");
+        double discountedPrice = (double) ticket.getPrice() * (1.0d - discount / 100.0d);
+        if (!Double.isFinite(discountedPrice)) {
+            throw new RequestValidationException("discount", "Не удалось рассчитать конечную цену билета");
+        }
+        float price = (float) Math.max(MINIMUM_TICKET_PRICE, discountedPrice);
         ticketCreateDto.setPrice(price);
         Ticket ticketResponse = ticketClient.createTicket(ticketCreateDto);
         return ticketMapper.toTicketResponseDto(ticketResponse);
