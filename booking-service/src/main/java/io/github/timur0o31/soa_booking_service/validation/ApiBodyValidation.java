@@ -52,7 +52,7 @@ public final class ApiBodyValidation implements ContainerRequestFilter {
    catch(RuntimeException e){throw invalid(path,"Invalid calendar date or RFC 3339 timestamp");}
   } else if(type.equals("integer")||type.equals("number")) {
    if(!(v instanceof JsonNumber number))throw invalid(path,"Expected a JSON number");BigDecimal n=number.bigDecimalValue();String format=s.getString("format","");
-   try {if(type.equals("integer")){BigInteger i=n.toBigIntegerExact();if(format.equals("int32"))i.intValueExact();if(format.equals("int64"))i.longValueExact();}
+   try {if(type.equals("integer")){if(format.equals("int32"))n.intValueExact();else if(format.equals("int64"))n.longValueExact();else if(n.stripTrailingZeros().scale()>0)throw new ArithmeticException();}
     if(type.equals("number")){double d=n.doubleValue();if(!Double.isFinite(d)||(d==0&&n.signum()!=0))throw new ArithmeticException();if(format.equals("float")){float f=n.floatValue();if(!Float.isFinite(f)||(f==0&&n.signum()!=0))throw new ArithmeticException();}}}
    catch(ArithmeticException e){throw invalid(path,"Number is outside the API type range");}
    if(s.containsKey("minimum")){int c=n.compareTo(s.getJsonNumber("minimum").bigDecimalValue());if(c<0||(c==0&&s.getBoolean("exclusiveMinimum",false)))throw invalid(path,"Number is below the allowed minimum");}
