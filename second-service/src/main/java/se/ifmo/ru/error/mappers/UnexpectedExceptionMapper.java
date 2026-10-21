@@ -14,6 +14,6 @@ public class UnexpectedExceptionMapper implements ExceptionMapper<Exception> {
     @Override
     public Response toResponse(Exception exception) {
         LOGGER.log(Level.SEVERE, "Unexpected request failure", exception);
-        return ErrorResponses.build(Response.Status.INTERNAL_SERVER_ERROR, "Internal server error");
+        return ErrorResponses.build(Response.Status.INTERNAL_SERVER_ERROR, "Внутренняя ошибка сервера");
     }
 }
