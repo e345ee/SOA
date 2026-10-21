@@ -27,8 +27,9 @@ public class TicketResource {
     private TicketService ticketService;
 
     @GET
-    public Response getTickets(@QueryParam("page") @DefaultValue("0") @Min(0) long page,
-            @QueryParam("size") @DefaultValue("20") @Min(1) @Max(100) int size) {
+    public Response getTickets(@QueryParam("page") @DefaultValue("0") String pageRaw,
+            @QueryParam("size") @DefaultValue("20") String sizeRaw) {
+        long page=se.ifmo.ru.utils.ApiValidation.page(pageRaw);int size=se.ifmo.ru.utils.ApiValidation.size(sizeRaw);
         return Response.ok(ticketService.getTickets(page, size)).build();
     }
     @POST
