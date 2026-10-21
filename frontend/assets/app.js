@@ -183,6 +183,7 @@ async function loadList(){
   if(version!==generation||current!==entity)return;
   if(!data||!Array.isArray(data.content))throw new ApiError('Сервер не вернул коллекцию объектов. Данные не загружены.');
   if(data.page!==undefined && data.page!==state.page)throw new ApiError('Сервер вернул другую страницу. Данные не показаны, чтобы не перепутать результаты.');
+  if(Number.isSafeInteger(data.totalPages)&&data.totalPages>=0&&state.page>Math.max(0,data.totalPages-1)){state.page=Math.max(0,data.totalPages-1);return loadList();}
   state.data=data;state.error=null;renderRows();
  }catch(error){if(version!==generation||current!==entity)return;state.data=null;state.error=error;const pending=error.status===202;message($('#list-message'),pending?'':error.message);$('#rows').innerHTML=`<tr><td class="empty" colspan="${columns().length+1}">${pending?'Кажется, ничего не найдено.':'Нет загруженных данных.<br>Исправьте ошибку или нажмите «Обновить».'}</td></tr>`;}
  finally{if(version===generation&&current===entity){app.setAttribute('aria-busy','false');renderPager();}}
