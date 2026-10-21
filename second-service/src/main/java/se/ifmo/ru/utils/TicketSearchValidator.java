@@ -41,10 +41,17 @@ public final class TicketSearchValidator {
 
     private static void validateSorting(List<SortDto> sorts) {
         if (sorts == null) return;
-        for (int index = 0; index < sorts.size(); index++) {
-            String field = sorts.get(index).field();
-            if (!SORT_FIELDS.contains(field)) {
-                throw new RequestValidationException("sort[" + index + "].field", "Недопустимое поле сортировки: " + field);
+        for (SortDto sort : sorts) {
+            if (sort == null) {
+                throw new RequestValidationException("sort", "Укажите поле и направление сортировки");
+            }
+            String field = sort.field();
+            if (field == null || !SORT_FIELDS.contains(field)) {
+                throw new RequestValidationException("sort.field", "Недопустимое поле сортировки: " + field);
+            }
+            String direction = sort.direction();
+            if (!"ASC".equalsIgnoreCase(direction) && !"DESC".equalsIgnoreCase(direction)) {
+                throw new RequestValidationException("sort.direction", "Направление должно быть ASC или DESC");
             }
         }
     }
