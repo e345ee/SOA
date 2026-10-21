@@ -25,9 +25,8 @@ public class ConstraintViolationExceptionMapper implements ExceptionMapper<Const
     private String fieldName(Path path) {
         StringJoiner field = new StringJoiner(".");
         for (Path.Node node : path) {
-            if (node.getKind() == ElementKind.PROPERTY) {
+            if (node.getKind() == ElementKind.PROPERTY)
                 field.add(node.getName());
-            }
         }
         return field.length() == 0 ? "$" : field.toString();
     }

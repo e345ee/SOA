@@ -19,7 +19,7 @@ public class WebApplicationExceptionMapper implements ExceptionMapper<WebApplica
         String detail = exception.getMessage();
         if (original.getStatus() >= 500) {
             LOGGER.log(Level.SEVERE, "HTTP server error", exception);
-            detail = "Internal server error";
+            detail = "Внутренняя ошибка сервера";
         }
         Response error = ErrorResponses.build(original.getStatusInfo(), detail);
         return Response.fromResponse(original)
