@@ -1,0 +1,337 @@
+openapi: 3.0.0
+
+info:
+  version: 1.0.1
+  title: Booking Service API
+
+servers:
+  - url: https://kronva-stat.ru/api/v1/reservation
+
+tags:
+  - name: Booking
+
+components:
+  schemas:
+    TicketType:
+      type: string
+      nullable: true
+      enum:
+        - VIP
+        - USUAL
+        - CHEAP
+
+    Coordinates:
+      type: object
+      required:
+        - x
+      properties:
+        x:
+          type: number
+          format: double
+          minimum: -495
+          exclusiveMinimum: true
+        y:
+          type: integer
+          format: int32
+          minimum: -262
+
+    Location:
+      type: object
+      required:
+        - x
+        - y
+        - name
+      properties:
+        x:
+          type: integer
+          format: int32
+        y:
+          type: integer
+          format: int32
+        name:
+          type: string
+
+    Person:
+      type: object
+      required:
+        - birthday
+        - location
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        birthday:
+          type: string
+          format: date
+        weight:
+          type: integer
+          format: int32
+          minimum: 1
+        location:
+          $ref: '#/components/schemas/Location'
+
+    PersonCreate:
+      type: object
+      required:
+        - birthday
+        - location
+      properties:
+        birthday:
+          type: string
+          format: date
+        weight:
+          type: integer
+          format: int32
+          minimum: 1
+        location:
+          $ref: '#/components/schemas/Location'
+
+    Ticket:
+      type: object
+      required:
+        - id
+        - name
+        - coordinates
+        - creationDate
+        - price
+        - person
+        - eventId
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          readOnly: true
+        name:
+          type: string
+          minLength: 1
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+        creationDate:
+          type: string
+          format: date-time
+          readOnly: true
+        price:
+          type: number
+          format: float
+          minimum: 1
+          description: Итоговая цена проданного билета в рублях; не ниже 1 рубля.
+        type:
+          $ref: '#/components/schemas/TicketType'
+        person:
+          $ref: '#/components/schemas/Person'
+        eventId:
+          type: integer
+          format: int64
+          minimum: 1
+    TicketCreate:
+      type: object
+      required:
+        - name
+        - coordinates
+        - price
+        - eventId
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          readOnly: true
+        name:
+          type: string
+          minLength: 1
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+        creationDate:
+          type: string
+          format: date
+          readOnly: true
+        price:
+          type: number
+          format: float
+          minimum: 0
+          exclusiveMinimum: true
+        type:
+          $ref: '#/components/schemas/TicketType'
+        personId:
+          type: integer
+          format: int64
+          minimum: 1
+        person:
+          $ref: '#/components/schemas/Person'
+        eventId:
+          type: integer
+          format: int64
+          minimum: 1
+      oneOf:
+        - required: [personId]
+        - required: [person]
+
+    TicketPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ticket'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        hasNext:
+          type: boolean
+        hasPrevious:
+          type: boolean
+
+    PersonPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Person'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        hasNext:
+          type: boolean
+        hasPrevious:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      required:
+        - title
+        - status
+        - detail
+      properties:
+        title:
+          type: string
+          minLength: 1
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+          minLength: 1
+          
+paths:
+  /sell/discount/{ticket-id}/{person-id}/{discount}:
+    post:
+      tags:
+        - Booking
+      description: >-
+        Создать новый билет на основе указанного для выбранного человека,
+        применив скидку от 0 до 100 процентов включительно. Итоговая цена
+        в рублях равна max(1, исходная цена * (1 - discount / 100)).
+        При скидке 100 процентов новый билет стоит 1 рубль.
+        Исходный билет не изменяется.
+      parameters:
+        - name: ticket-id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: person-id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: discount
+          in: path
+          required: true
+          description: Скидка в процентах. Цена после применения скидки не может быть ниже 1 рубля.
+          schema:
+            type: number
+            format: float
+            minimum: 0
+            maximum: 100
+      responses:
+        '201':
+          description: Новый билет успешно создан; цена после скидки не ниже 1 рубля.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '400':
+          description: Некорректный идентификатор или размер скидки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
+        '404':
+          description: Исходный билет или человек не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Not Found
+                status: 404
+                detail: Человек с id=13 не найден
+
+  /event/{event-id}/cancel:
+    post:
+      tags:
+        - Booking
+      description: отменить указанное событие, удалив все билеты на него
+      parameters:
+        - name: event-id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '204':
+          description: Все билеты указанного события успешно удалены
+        '400':
+          description: Некорректный идентификатор события
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
+        '404':
+          description: Билеты указанного события не найдены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Not Found
+                status: 404
+                detail: Билеты с eventId=13 не найден

@@ -15,6 +15,15 @@ these copies in sync only when an approved API contract changes. Unknown object
 properties remain allowed according to OpenAPI's default; read-only fields do not
 become required on write. Response DTOs follow the same property names and types.
 
+The authoritative API documents are `api/ticket.yaml` and `api/booking.yaml`.
+After an approved change, run `python3 deploy/sync-contracts.py` (requires PyYAML)
+to update both backend schema copies and the frontend contract. Run the same
+command with `--check` before building. Publish the YAML files as
+`/var/www/kronva-stat/swagger/ticket.yaml` and `booking.yaml`, and publish the
+updated frontend contract. Rebuild/redeploy a service when its packaged schemas
+change. Booking 1.0.1 documents its minimum sale price of 1 ruble; Ticket CRUD
+keeps the original positive-price constraint.
+
 Use POST `/tickets/search` and `/persons/search` for sorting/filtering. GET lists
 support page/size only, as described in the approved contract. Pages start at zero.
 Nested sorting supports all enum values from the respective Swagger schemas;
