@@ -10,10 +10,10 @@ import lombok.Setter;
 @Setter
 public class Location {
     @NotNull
-    private Integer x; // Поле не может быть null
+    private Integer x;
     @NotNull
-    private Integer y;// Поле не может быть null
+    private Integer y;
     @NotNull
-    private String name; //Поле может быть null
+    private String name;
 
 }

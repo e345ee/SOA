@@ -8,8 +8,9 @@ import se.ifmo.ru.dto.request.PersonCreateDto;
 import se.ifmo.ru.dto.response.PersonResponseDto;
 import se.ifmo.ru.model.Person;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI)
+@Mapper(unmappedTargetPolicy = org.mapstruct.ReportingPolicy.ERROR, componentModel = MappingConstants.ComponentModel.JAKARTA_CDI)
 public interface PersonMapper {
+    @Mapping(target="id", ignore=true)
     Person toPerson(PersonCreateDto personCreateDto);
     PersonResponseDto toPersonResponseDto(Person person);
 

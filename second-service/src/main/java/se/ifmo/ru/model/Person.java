@@ -20,9 +20,8 @@ public class Person {
     @NotNull
     private LocalDate birthday;
 
-    @NotNull
     @Positive
-    private int weight;
+    private Integer weight;
 
     @NotNull
     private Location location;

@@ -13,6 +13,8 @@ import java.util.List;
 
 @ApplicationScoped
 public class BookingService {
+    private static final float MINIMUM_TICKET_PRICE = 1.0f;
+
     @Inject
     private TicketClient ticketClient;
     @Inject
@@ -24,13 +26,18 @@ public class BookingService {
         if (personId == null || personId <= 0) {
             throw new RequestValidationException("personId", "Идентификатор должен быть положительным");
         }
-        if (discount == null || !Float.isFinite(discount) || discount < 0 || discount >= 100) {
-            throw new RequestValidationException("discount", "Скидка должна быть от 0 включительно до 100 исключительно");
+        if (discount == null || !Float.isFinite(discount) || discount < 0 || discount > 100) {
+            throw new RequestValidationException("discount", "Скидка должна быть от 0 включительно до 100 включительно");
         }
         Ticket ticket = ticketClient.getTicketById(ticketId);
         TicketCreateDto ticketCreateDto = ticketMapper.toTicketCreateDto(ticket);
         ticketCreateDto.setPersonId(personId);
-        ticketCreateDto.setPrice(ticket.getPrice()-ticket.getPrice()*discount/100f);
+        double discountedPrice = (double) ticket.getPrice() * (1.0d - discount / 100.0d);
+        if (!Double.isFinite(discountedPrice)) {
+            throw new RequestValidationException("discount", "Не удалось рассчитать конечную цену билета");
+        }
+        float price = (float) Math.max(MINIMUM_TICKET_PRICE, discountedPrice);
+        ticketCreateDto.setPrice(price);
         Ticket ticketResponse = ticketClient.createTicket(ticketCreateDto);
         return ticketMapper.toTicketResponseDto(ticketResponse);
     }

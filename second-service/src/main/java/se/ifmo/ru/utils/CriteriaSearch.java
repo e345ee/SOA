@@ -5,6 +5,7 @@ import jakarta.data.page.PageRequest;
 import jakarta.persistence.criteria.*;
 import org.hibernate.StatelessSession;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -31,7 +32,7 @@ public class CriteriaSearch {
         }
         cq.select(root).where(whereFilters(cb,root, filters)).orderBy(orderBy);
         return statelessSession.createQuery(cq)
-                .setFirstResult((int) (pageRequest.page()-1)*pageRequest.size())
+                .setFirstResult(Math.toIntExact(Math.multiplyExact(pageRequest.page()-1, (long)pageRequest.size())))
                 .setMaxResults(pageRequest.size())
                 .getResultList();
     }
@@ -56,20 +57,23 @@ public class CriteriaSearch {
     private static Predicate toPredicate(CriteriaBuilder cb, Root<?> root, String key, Object value) {
         if (key.endsWith(">=")) {
             Path column = path(root, key.substring(0, key.length() - 2));
-            return cb.greaterThanOrEqualTo(column, (Comparable) value);
+            return cb.greaterThanOrEqualTo(column, (Comparable) convert(column.getJavaType(), value));
         }
         if (key.endsWith("<=")) {
             Path column = path(root, key.substring(0, key.length() - 2));
-            return cb.lessThanOrEqualTo(column, (Comparable) value);
+            return cb.lessThanOrEqualTo(column, (Comparable) convert(column.getJavaType(), value));
         }
         if (key.endsWith("~")) {
             Expression<String> column = path(root, key.substring(0, key.length() - 1))
                     .as(String.class);
-            String pattern = "%" + escapeLike(value.toString().toLowerCase(Locale.ROOT)) + "%";
+            String pattern = "%" +
+                    escapeLike(value.toString().toLowerCase(Locale.ROOT)) + "%";
             return cb.like(cb.lower(column), pattern, '\\');
         }
         Path<?> column = path(root, key);
-        return cb.equal(column, value);
+        if(value == null)return cb.isNull(column);
+        Object typedValue = convert(column.getJavaType(), value);
+        return cb.equal(column, typedValue);
     }
 
     private static String escapeLike(String text) {
@@ -77,9 +81,25 @@ public class CriteriaSearch {
                 .replace("%", "\\%")
                 .replace("_", "\\_");
     }
+    private static Object convert(Class<?> type, Object raw) {
+        if(type == java.sql.Timestamp.class && raw instanceof java.util.Date date)return new java.sql.Timestamp(date.getTime());
+        if (type.isInstance(raw)) {
+            return raw;
+        }
+        String s = String.valueOf(raw);
+        if (type == Long.class || type == long.class)
+            return Long.valueOf(s);
+        if (type == Integer.class || type == int.class)
+            return Integer.valueOf(s);
+        if (type == Double.class || type == double.class)
+            return Double.valueOf(s);
+        if (type == LocalDate.class)
+            return LocalDate.parse(s);
+        return s;
+    }
     private static Path<?> path(Path<?> root, String property) {
         Path<?> p = root;
-        for (String part : property.split("\\.")) { //чтобы у location.x, можно было взять x
+        for (String part : property.split("\\.")) {
             p = p.get(part);
         }
         return p;

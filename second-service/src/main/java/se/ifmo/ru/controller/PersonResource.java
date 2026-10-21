@@ -11,8 +11,10 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import se.ifmo.ru.dto.request.PersonCreateDto;
+import se.ifmo.ru.dto.request.PersonInputDto;
+import se.ifmo.ru.dto.request.TicketUpdateDto;
+import static se.ifmo.ru.utils.ApiValidation.id;
 import se.ifmo.ru.dto.request.SearchDto;
-import se.ifmo.ru.dto.request.PersonSearchFilter;
 import se.ifmo.ru.dto.response.PersonResponseDto;
 import se.ifmo.ru.dto.response.TicketResponseDto;
 import se.ifmo.ru.service.PersonService;
@@ -26,8 +28,9 @@ public class PersonResource {
     @Inject
     private PersonService personService;
     @GET
-    public Response getPersons(@QueryParam("page") @DefaultValue("0") @Min(0) long page,
-            @QueryParam("size") @DefaultValue("20") @Min(1) @Max(100) int size) {
+    public Response getPersons(@QueryParam("page") @DefaultValue("0") String pageRaw,
+            @QueryParam("size") @DefaultValue("20") String sizeRaw) {
+        long page=se.ifmo.ru.utils.ApiValidation.page(pageRaw);int size=se.ifmo.ru.utils.ApiValidation.size(sizeRaw);
         return Response.ok(personService.getPersons(page, size)).build();
     }
 
@@ -39,26 +42,29 @@ public class PersonResource {
     }
     @DELETE
     @Path("/{id}")
-    public Response deletePerson(@PathParam("id") Long id) {
+    public Response deletePerson(@PathParam("id") String idRaw) {
+        Long id = id(idRaw);
         personService.deletePersonById(id);
         return Response.noContent().build();
     }
     @GET
     @Path("/{id}")
-    public Response getPersonById(@PathParam("id") Long id){
+    public Response getPersonById(@PathParam("id") String idRaw){
+        Long id = id(idRaw);
         PersonResponseDto dto = personService.findById(id);
         return Response.ok(dto).build();
     }
     @PUT
     @Path("/{id}")
-    public Response updatePerson(@PathParam("id") Long id, @NotNull @Valid PersonCreateDto dto) {
-        PersonResponseDto responseDto = personService.updatePerson(id, dto);
+    public Response updatePerson(@PathParam("id") String idRaw, @NotNull @Valid PersonInputDto dto) {
+        Long id = id(idRaw);
+        PersonResponseDto responseDto = personService.updatePerson(id, dto.toCreate());
         return Response.ok(responseDto).build();
     }
 
     @POST
     @Path("/search")
-    public Response searchPerson(@NotNull @Valid SearchDto<PersonSearchFilter> searchDto) {
+    public Response searchPerson(SearchDto searchDto) {
         return Response.ok(personService.search(searchDto)).build();
     }
 

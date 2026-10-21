@@ -9,8 +9,10 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import lombok.Getter;
 import se.ifmo.ru.dto.request.PersonCreateDto;
+import se.ifmo.ru.dto.request.PersonInputDto;
+import se.ifmo.ru.dto.request.TicketUpdateDto;
+import static se.ifmo.ru.utils.ApiValidation.id;
 import se.ifmo.ru.dto.request.SearchDto;
-import se.ifmo.ru.dto.request.TicketSearchFilter;
 import se.ifmo.ru.dto.request.TicketCreateDto;
 import se.ifmo.ru.dto.response.TicketResponseDto;
 import se.ifmo.ru.service.TicketService;
@@ -25,13 +27,14 @@ public class TicketResource {
     private TicketService ticketService;
 
     @GET
-    public Response getTickets(@QueryParam("page") @DefaultValue("0") @Min(0) long page,
-            @QueryParam("size") @DefaultValue("20") @Min(1) @Max(100) int size) {
+    public Response getTickets(@QueryParam("page") @DefaultValue("0") String pageRaw,
+            @QueryParam("size") @DefaultValue("20") String sizeRaw) {
+        long page=se.ifmo.ru.utils.ApiValidation.page(pageRaw);int size=se.ifmo.ru.utils.ApiValidation.size(sizeRaw);
         return Response.ok(ticketService.getTickets(page, size)).build();
     }
     @POST
     @Path("/search")
-    public Response searchTickets(@NotNull @Valid SearchDto<TicketSearchFilter> dto) {
+    public Response searchTickets(SearchDto dto) {
         return Response.ok(ticketService.search(dto)).build();
     }
 
@@ -43,20 +46,23 @@ public class TicketResource {
     }
     @DELETE
     @Path("/{id}")
-    public Response deleteTicket(@PathParam("id") Long ticketId){
+    public Response deleteTicket(@PathParam("id") String ticketIdRaw){
+        Long ticketId = id(ticketIdRaw);
         ticketService.deleteTicketById(ticketId);
         return Response.noContent().build();
     }
     @GET
     @Path("/{id}")
-    public Response getTicketById(@PathParam("id") Long id){
+    public Response getTicketById(@PathParam("id") String idRaw){
+        Long id = id(idRaw);
         TicketResponseDto responseDto =  ticketService.findById(id);
         return Response.ok(responseDto).build();
     }
 
     @PUT
     @Path("/{id}")
-    public Response updateTicketById(@PathParam("id") Long id, @NotNull @Valid TicketCreateDto dto){
+    public Response updateTicketById(@PathParam("id") String idRaw, @NotNull @Valid TicketUpdateDto dto){
+        Long id = id(idRaw);
         TicketResponseDto responseDto = ticketService.updateTicket(id, dto);
         return Response.ok(responseDto).build();
     }
@@ -77,7 +83,7 @@ public class TicketResource {
 
     @POST
     @Path("/count-by-person")
-    public Response getCountByPerson(@NotNull @Valid PersonCreateDto dto){
+    public Response getCountByPerson(@NotNull @Valid PersonInputDto dto){
         return Response.ok(ticketService.countByPerson(dto)).build();
     }
 

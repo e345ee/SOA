@@ -1,0 +1,1024 @@
+openapi: 3.0.0
+
+info:
+  version: 1.0.0
+  title: Ticket Service API
+
+servers:
+  - url: https://kronva-stat.ru/api/v1
+
+tags:
+  - name: Tickets
+  - name: Persons
+  - name: Ticket statistics
+
+components:
+  schemas:
+    TicketType:
+      type: string
+      nullable: true
+      enum:
+        - VIP
+        - USUAL
+        - CHEAP
+
+    Coordinates:
+      type: object
+      required:
+        - x
+      properties:
+        x:
+          type: number
+          format: double
+          minimum: -495
+          exclusiveMinimum: true
+        y:
+          type: integer
+          format: int32
+          minimum: -262
+
+    Location:
+      type: object
+      required:
+        - x
+        - y
+        - name
+      properties:
+        x:
+          type: integer
+          format: int32
+        y:
+          type: integer
+          format: int32
+        name:
+          type: string
+
+    Person:
+      type: object
+      required:
+        - birthday
+        - location
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        birthday:
+          type: string
+          format: date
+        weight:
+          type: integer
+          format: int32
+          minimum: 1
+        location:
+          $ref: '#/components/schemas/Location'
+
+    PersonCreate:
+      type: object
+      required:
+        - birthday
+        - location
+      properties:
+        birthday:
+          type: string
+          format: date
+        weight:
+          type: integer
+          format: int32
+          minimum: 1
+        location:
+          $ref: '#/components/schemas/Location'
+
+    Ticket:
+      type: object
+      required:
+        - id
+        - name
+        - coordinates
+        - creationDate
+        - price
+        - person
+        - eventId
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          readOnly: true
+        name:
+          type: string
+          minLength: 1
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+        creationDate:
+          type: string
+          format: date-time
+          readOnly: true
+        price:
+          type: number
+          format: float
+          minimum: 0
+          exclusiveMinimum: true
+        type:
+          $ref: '#/components/schemas/TicketType'
+        person:
+          $ref: '#/components/schemas/Person'
+        eventId:
+          type: integer
+          format: int64
+          minimum: 1
+    TicketCreate:
+      type: object
+      required:
+        - name
+        - coordinates
+        - price
+        - eventId
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          readOnly: true
+        name:
+          type: string
+          minLength: 1
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+        creationDate:
+          type: string
+          format: date
+          readOnly: true
+        price:
+          type: number
+          format: float
+          minimum: 0
+          exclusiveMinimum: true
+        type:
+          $ref: '#/components/schemas/TicketType'
+        personId:
+          type: integer
+          format: int64
+          minimum: 1
+        person:
+          $ref: '#/components/schemas/Person'
+        eventId:
+          type: integer
+          format: int64
+          minimum: 1
+      oneOf:
+        - required: [personId]
+        - required: [person]
+
+    TicketPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ticket'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        hasNext:
+          type: boolean
+        hasPrevious:
+          type: boolean
+
+    PersonPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Person'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        hasNext:
+          type: boolean
+        hasPrevious:
+          type: boolean
+
+    TicketSearchRequest:
+      type: object
+      properties:
+        filter:
+          $ref: '#/components/schemas/TicketSearchFilter'
+        page:
+          type: integer
+          minimum: 0
+          default: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        sort:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketSort'
+
+    TicketSearchFilter:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        nameContains:
+          type: string
+          minLength: 1
+          description: Частичное совпадение name
+        coordinatesXFrom:
+          type: number
+          format: double
+          minimum: -495
+          exclusiveMinimum: true
+        coordinatesXTo:
+          type: number
+          format: double
+        coordinatesYFrom:
+          type: integer
+          format: int32
+          minimum: -262
+        coordinatesYTo:
+          type: integer
+          format: int32
+        creationDateFrom:
+          type: string
+          format: date-time
+        creationDateTo:
+          type: string
+          format: date-time
+        priceFrom:
+          type: number
+          format: float
+          minimum: 0
+          exclusiveMinimum: true
+        priceTo:
+          type: number
+          format: float
+          minimum: 0
+          exclusiveMinimum: true
+        type:
+          $ref: '#/components/schemas/TicketType'
+        personBirthday:
+          type: string
+          format: date
+        personBirthdayFrom:
+          type: string
+          format: date
+        personBirthdayTo:
+          type: string
+          format: date
+        personWeight:
+          type: integer
+          format: int32
+          minimum: 1
+        personWeightFrom:
+          type: integer
+          format: int32
+          minimum: 1
+        personWeightTo:
+          type: integer
+          format: int32
+          minimum: 1
+        personLocationX:
+          type: integer
+          format: int32
+        personLocationY:
+          type: integer
+          format: int32
+        personLocationNameContains:
+          type: string
+          description: Частичное совпадение person.location.name
+        eventId:
+          type: integer
+          format: int64
+          minimum: 1
+
+    TicketSort:
+      type: object
+      required:
+        - field
+        - direction
+      properties:
+        field:
+          type: string
+          enum:
+            - id
+            - name
+            - coordinates.x
+            - coordinates.y
+            - creationDate
+            - price
+            - type
+            - person.birthday
+            - person.weight
+            - person.location.x
+            - person.location.y
+            - person.location.name
+            - eventId
+        direction:
+          type: string
+          enum:
+            - ASC
+            - DESC
+
+    PersonSearchRequest:
+      type: object
+      properties:
+        filter:
+          $ref: '#/components/schemas/PersonSearchFilter'
+        page:
+          type: integer
+          minimum: 0
+          default: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        sort:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonSort'
+
+    PersonSearchFilter:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        birthday:
+          type: string
+          format: date
+        birthdayFrom:
+          type: string
+          format: date
+        birthdayTo:
+          type: string
+          format: date
+        weight:
+          type: integer
+          format: int32
+          minimum: 1
+        weightFrom:
+          type: integer
+          format: int32
+          minimum: 1
+        weightTo:
+          type: integer
+          format: int32
+          minimum: 1
+        locationX:
+          type: integer
+          format: int32
+        locationY:
+          type: integer
+          format: int32
+        locationNameContains:
+          type: string
+          description: Частичное совпадение location.name
+
+    PersonSort:
+      type: object
+      required:
+        - field
+        - direction
+      properties:
+        field:
+          type: string
+          enum:
+            - id
+            - birthday
+            - weight
+            - location.x
+            - location.y
+            - location.name
+        direction:
+          type: string
+          enum:
+            - ASC
+            - DESC
+
+    ErrorResponse:
+      type: object
+      required:
+        - title
+        - status
+        - detail
+      properties:
+        title:
+          type: string
+          minLength: 1
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+          minLength: 1
+          
+
+  parameters:
+    TicketFilter:
+      name: filter
+      in: query
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: object
+        properties:
+          id:
+            type: integer
+            format: int64
+            minimum: 1
+          nameContains:
+            type: string
+            minLength: 1
+          coordinatesX:
+            type: number
+            format: double
+            minimum: -495
+            exclusiveMinimum: true
+          coordinatesY:
+            type: integer
+            format: int32
+            minimum: -262
+          creationDate:
+            type: string
+            format: date-time
+          price:
+            type: number
+            format: float
+            minimum: 0
+            exclusiveMinimum: true
+          type:
+            $ref: '#/components/schemas/TicketType'
+          personBirthday:
+            type: string
+            format: date
+          personWeight:
+            type: integer
+            format: int32
+            minimum: 1
+          personLocationX:
+            type: integer
+            format: int32
+          personLocationY:
+            type: integer
+            format: int32
+          personLocationNameContains:
+            type: string
+          eventId:
+            type: integer
+            format: int64
+            minimum: 1
+    PersonFilter:
+      name: filter
+      in: query
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: object
+        properties:
+          birthday:
+            type: string
+            format: date
+          weight:
+            type: integer
+            format: int32
+            minimum: 1
+          locationX:
+            type: integer
+            format: int32
+          locationY:
+            type: integer
+            format: int32
+          locationNameContains:
+            type: string
+
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+    Size:
+      name: size
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+    Sort:
+      name: sort
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        default: id
+      example: '-price,name'
+
+paths:
+  /tickets:
+    get:
+      tags:
+        - Tickets
+      description: Получить список билетов с пагинацией
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Список билетов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketPageResponse'
+        '400':
+          description: Некорректные параметры пагинации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
+
+    post:
+      tags:
+        - Tickets
+      description: Создать новый билет
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketCreate'
+      responses:
+        '201':
+          description: Билет создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '400':
+          description: Переданы некорректные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
+
+  /tickets/search:
+    post:
+      tags:
+        - Tickets
+      description: Найти билеты с фильтрацией, частичным совпадением строк, пагинацией и сортировкой
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketSearchRequest'
+            example:
+              filter:
+                nameContains: concert
+                priceFrom: 100
+                priceTo: 5000
+                type: VIP
+                personLocationNameContains: moscow
+              page: 0
+              size: 20
+              sort:
+                - field: price
+                  direction: DESC
+                - field: name
+                  direction: ASC
+      responses:
+        '200':
+          description: Список билетов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketPageResponse'
+        '400':
+          description: Некорректные параметры фильтрации, сортировки или пагинации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
+
+  /tickets/{id}:
+    parameters: 
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    get:
+      tags:
+        - Tickets
+      description: Получить билет по идентификатору
+      responses:
+        '200':
+          description: Билет получен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '400':
+          description: Некорректный идентификатор
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
+        '404':
+          description: Билет не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Not Found
+                status: 404
+                detail: Билет с id=4 не найден
+
+    put:
+      tags:
+        - Tickets
+      description: Обновить билет
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ticket'
+      responses:
+        '200':
+          description: Билет успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '400':
+          description: Переданы некорректные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
+        '404':
+          description: Билет не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Not Found
+                status: 404
+                detail: Билет с id=23 не найден
+
+    delete:
+      tags:
+        - Tickets
+      description: Удалить билет
+      responses:
+        '204':
+          description: Билет успешно удален
+        '400':
+          description: Некорректный идентификатор
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
+        '404':
+          description: Билет не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Not Found
+                status: 404
+                detail: Билет с id=431 не найден
+
+  /persons:
+    get:
+      tags:
+        - Persons
+      description: Получить список людей с пагинацией
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Список людей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonPageResponse'
+        '400':
+          description: Некорректные параметры пагинации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
+
+    post:
+      tags:
+        - Persons
+      description: Создать нового человека
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonCreate'
+      responses:
+        '201':
+          description: Человек создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+        '400':
+          description: Переданы некорректные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
+
+  /persons/search:
+    post:
+      tags:
+        - Persons
+      description: Найти людей с фильтрацией, частичным совпадением строк, пагинацией и сортировкой
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonSearchRequest'
+            example:
+              filter:
+                birthdayFrom: 2000-01-01
+                birthdayTo: 2005-12-31
+                weightFrom: 60
+                weightTo: 90
+                locationNameContains: moscow
+              page: 0
+              size: 20
+              sort:
+                - field: weight
+                  direction: DESC
+                - field: birthday
+                  direction: ASC
+      responses:
+        '200':
+          description: Список людей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonPageResponse'
+        '400':
+          description: Некорректные параметры фильтрации, сортировки или пагинации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
+
+  /persons/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+
+    get:
+      tags:
+        - Persons
+      description: Получить человека по идентификатору
+      responses:
+        '200':
+          description: Человек получен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+        '400':
+          description: Некорректный идентификатор
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
+        '404':
+          description: Человек не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Not Found
+                status: 404
+                detail: Человек с id=13 не найден
+
+    put:
+      tags:
+        - Persons
+      description: Обновить данные человека
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Person'
+      responses:
+        '200':
+          description: Данные человека успешно обновлены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+        '400':
+          description: Переданы некорректные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
+        '404':
+          description: Человек не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Not Found
+                status: 404
+                detail: Человек с id=13 не найден
+
+    delete:
+      tags:
+        - Persons
+      description: Удалить человека
+      responses:
+        '204':
+          description: Человек успешно удален
+        '400':
+          description: Некорректный идентификатор
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
+        '404':
+          description: Человек не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Not Found
+                status: 404
+                detail: Человек с id=13 не найден
+
+  /tickets/price/sum:
+    get:
+      tags:
+        - Ticket statistics
+      description: Рассчитать сумму значений поля price для всех билетов
+      responses:
+        '200':
+          description: Сумма значений поля price
+          content:
+            application/json:
+              schema:
+                type: number
+                format: double
+                minimum: 0
+
+  /tickets/price/average:
+    get:
+      tags:
+        - Ticket statistics
+      description: Рассчитать среднее значение поля price для всех билетов
+      responses:
+        '200':
+          description: Среднее значение поля price
+          content:
+            application/json:
+              schema:
+                type: number
+                format: double
+                minimum: 0
+
+  /tickets/count-by-person:
+    post:
+      tags:
+        - Ticket statistics
+      description: Вернуть количество билетов, поле person которых равно заданному
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Person'
+      responses:
+        '200':
+          description: Количество билетов
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+                minimum: 0
+        '400':
+          description: Некорректные данные объекта person
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
