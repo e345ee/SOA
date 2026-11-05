@@ -16,9 +16,9 @@ public class TicketSearchFilterDto {
     @Positive private Long id;
     @Size(min = 1) private String nameContains;
     @DecimalMin(value = "-495", inclusive = false) private BigDecimal coordinatesXFrom;
-    private BigDecimal coordinatesXTo;
+    @DecimalMin(value = "-495", inclusive = false) private BigDecimal coordinatesXTo;
     @Min(-262) private Integer coordinatesYFrom;
-    private Integer coordinatesYTo;
+    @Min(-262) private Integer coordinatesYTo;
     private OffsetDateTime creationDateFrom;
     private OffsetDateTime creationDateTo;
     @Positive private Float priceFrom;
