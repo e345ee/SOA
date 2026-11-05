@@ -10,7 +10,8 @@ import lombok.Setter;
 @Embeddable
 @Getter
 @Setter
-public class Coordinates {
+public class
+Coordinates {
     @Column(nullable = false)
     @DecimalMin(value = "-495", inclusive = false)
     private Double x;

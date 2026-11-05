@@ -1,15 +1,12 @@
 package se.ifmo.ru.mapper;
 
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingConstants;
-import org.mapstruct.MappingTarget;
+import org.mapstruct.*;
 import se.ifmo.ru.dto.request.TicketCreateDto;
 import se.ifmo.ru.dto.request.TicketUpdateDto;
 import se.ifmo.ru.dto.response.TicketResponseDto;
 import se.ifmo.ru.model.Ticket;
 
-@Mapper(unmappedTargetPolicy = org.mapstruct.ReportingPolicy.ERROR, componentModel = MappingConstants.ComponentModel.JAKARTA_CDI, uses = PersonMapper.class)
+@Mapper(unmappedTargetPolicy = ReportingPolicy.ERROR, componentModel = MappingConstants.ComponentModel.JAKARTA_CDI, uses = PersonMapper.class)
 public interface TicketMapper {
     @Mapping(target="id", ignore=true)
     @Mapping(target="creationDate", ignore=true)

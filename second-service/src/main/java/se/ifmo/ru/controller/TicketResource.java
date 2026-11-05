@@ -2,16 +2,16 @@ package se.ifmo.ru.controller;
 
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import se.ifmo.ru.dto.request.*;
+
+
 import se.ifmo.ru.dto.response.TicketResponseDto;
 import se.ifmo.ru.service.TicketService;
-import se.ifmo.ru.service.EventCancellationService;
+
 import java.net.URI;
-import java.util.UUID;
-import se.ifmo.ru.service.DiscountSaleService;
 
 @Path("/tickets")
 @Produces(MediaType.APPLICATION_JSON)
@@ -20,82 +20,61 @@ public class TicketResource {
     @Inject
     private TicketService ticketService;
 
-    @Inject
-    private EventCancellationService eventCancellationService;
-
-    @Inject
-    private DiscountSaleService sales;
-
-    @POST
-    @Path("/discount/{ticket-id}/{person-id}/{discount}")
-    public Response sell(@PathParam("ticket-id") @Min(1) Long ticketId,
-                         @PathParam("person-id") @Min(1) Long personId,
-                         @PathParam("discount") @DecimalMin("0") @DecimalMax("100") Float discount,
-                         @HeaderParam("Idempotency-Key") @NotNull @Pattern(regexp = "[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}") String key) {
-        String response = sales.sell(UUID.fromString(key), ticketId, personId, discount);
-        return Response.status(Response.Status.CREATED).entity(response).build();
-    }
-
-    @POST
-    @Path("/cancel-event/{event-id}")
-    public Response cancelEvent(@PathParam("event-id") @Min(1) Long eventId) {
-        eventCancellationService.cancelEvent(eventId);
-        return Response.noContent().build();
-    }
-
     @GET
-    public Response getTickets(@QueryParam("page") @DefaultValue("0") @Min(0) Long page,
-                                @QueryParam("size") @DefaultValue("20") @Min(1) @Max(100) Integer size) {
+    public Response getTickets(@QueryParam("page") @DefaultValue("0") Long page,
+            @QueryParam("size") @DefaultValue("20") Integer size) {
         return Response.ok(ticketService.getTickets(page, size)).build();
     }
-
-    @GET
-    @Path("/{id}")
-    public Response getTicketById(@PathParam("id") @Min(1) Long id) {
-        return Response.ok(ticketService.findById(id)).build();
+    @POST
+    @Path("/search")
+    public Response searchTickets(@Valid SearchDto<TicketSearchFilterDto> dto) {
+        return Response.ok(ticketService.search(dto)).build();
     }
 
     @POST
-    public Response createTicket(@NotNull @Valid TicketCreateDto dto, @Context UriInfo uriInfo) {
-        TicketResponseDto response = ticketService.saveTicket(dto);
-        URI location = uriInfo.getAbsolutePathBuilder().path(String.valueOf(response.id())).build();
-        return Response.created(location).entity(response).build();
+    public Response createTicket(@NotNull @Valid TicketCreateDto dto, @Context UriInfo uriInfo){
+        TicketResponseDto responseDto = ticketService.saveTicket(dto);
+        URI location = uriInfo.getAbsolutePathBuilder().path(String.valueOf(responseDto.id())).build();
+        return Response.created(location).entity(responseDto).build();
+    }
+    @DELETE
+    @Path("/{id}")
+    public Response deleteTicket(@PathParam("id") Long ticketId){
+        ticketService.deleteTicketById(ticketId);
+        return Response.noContent().build();
+    }
+    @GET
+    @Path("/{id}")
+    public Response getTicketById(@PathParam("id") Long id){
+        TicketResponseDto responseDto =  ticketService.findById(id);
+        return Response.ok(responseDto).build();
     }
 
     @PUT
     @Path("/{id}")
-    public Response updateTicket(@PathParam("id") @Min(1) Long id, @NotNull @Valid TicketUpdateDto dto) {
-        return Response.ok(ticketService.updateTicket(id, dto)).build();
-    }
-
-    @DELETE
-    @Path("/{id}")
-    public Response deleteTicket(@PathParam("id") @Min(1) Long id) {
-        ticketService.deleteTicketById(id);
-        return Response.noContent().build();
-    }
-
-    @POST
-    @Path("/search")
-    public Response searchTickets(@NotNull @Valid SearchDto<TicketSearchFilter> dto) {
-        return Response.ok(ticketService.search(dto)).build();
+    public Response updateTicketById(@PathParam("id") Long id, @NotNull @Valid TicketUpdateDto dto){
+        TicketResponseDto responseDto = ticketService.updateTicket(id, dto);
+        return Response.ok(responseDto).build();
     }
 
     @GET
     @Path("/price/sum")
-    public Response getPriceSum() {
-        return Response.ok(ticketService.getSum()).build();
+    public Response getPriceSum(){
+        Double response = ticketService.getSum();
+        return Response.ok(response).build();
     }
 
     @GET
     @Path("/price/average")
-    public Response getPriceAverage() {
-        return Response.ok(ticketService.getAvg()).build();
+    public Response getPriceAvg(){
+        Double response = ticketService.getAvg();
+        return Response.ok(response).build();
     }
 
     @POST
     @Path("/count-by-person")
-    public Response countByPerson(@NotNull @Valid PersonInputDto dto) {
+    public Response getCountByPerson(@NotNull @Valid PersonInputDto dto){
         return Response.ok(ticketService.countByPerson(dto)).build();
     }
+
 }
