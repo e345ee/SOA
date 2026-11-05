@@ -10,20 +10,26 @@ public class TicketSearchRangesValidator implements RangesValidator,
     public boolean isValid(TicketSearchFilterDto filter, ConstraintValidatorContext context) {
         if (filter == null) return true;
         context.disableDefaultConstraintViolation();
-        boolean validWeightRange = validateRange(filter.personWeightFrom(), filter.personWeightTo(),
+        boolean validWeightRange = validateRange(filter.getPersonWeightFrom(), filter.getPersonWeightTo(),
                 "personWeightTo", "personWeightFrom должен быть не больше personWeightTo", context);
-        boolean xValid = validateRange(filter.coordinatesXFrom(), filter.coordinatesXTo(), "coordinatesXTo",
+
+        boolean xValid = validateRange(filter.getCoordinatesXFrom(), filter.getCoordinatesXTo(), "coordinatesXTo",
                 "coordinatesXFrom должен быть не больше coordinatesXTo", context);
-        boolean yValid = validateRange(filter.coordinatesYFrom(), filter.coordinatesYTo(),
+        boolean yValid = validateRange(filter.getCoordinatesYFrom(), filter.getCoordinatesYTo(),
                 "coordinatesYTo", "coordinatesYFrom должен быть не больше coordinatesYTo", context);
-        boolean weightValid = validateValueOrRange(filter.personWeight(),filter.personWeightFrom(),filter.personWeightTo(),
-                "weight", context);
-        boolean birthdayRangeValid = validateRange(filter.personBirthdayFrom(), filter.personBirthdayTo(), "personBirthdayTo",
+
+        boolean birthdayRangeValid = validateRange(filter.getPersonBirthdayFrom(), filter.getPersonBirthdayTo(), "personBirthdayTo",
                 "personBirthdayFrom должен быть не позже personBirthdayTo", context);
-        boolean creationDateValid = validateRange(filter.creationDateFrom(), filter.creationDateTo(), "creationDateTo",
+        var creationFrom = filter.getCreationDateFrom() == null ? null : filter.getCreationDateFrom().toInstant();
+        var creationTo = filter.getCreationDateTo() == null ? null : filter.getCreationDateTo().toInstant();
+        boolean creationDateValid = validateRange(creationFrom, creationTo, "creationDateTo",
                 "creationDateFrom должен быть не позже creationDateTo", context);
-        return xValid && yValid && weightValid &&
-                validWeightRange && birthdayRangeValid && creationDateValid;
+
+        boolean weightChoiceValid = validateValueOrRange(filter.getPersonWeight(), filter.getPersonWeightFrom(), filter.getPersonWeightTo(),
+                "personWeight", context);
+        boolean priceRangeValid = validateRange(filter.getPriceFrom(), filter.getPriceTo(),
+                "priceTo", "priceFrom должен быть не больше priceTo", context);
+        return xValid && yValid && validWeightRange && birthdayRangeValid && creationDateValid && priceRangeValid && weightChoiceValid;
     }
 
 }

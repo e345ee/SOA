@@ -3,6 +3,8 @@ package se.ifmo.ru.controller;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import se.ifmo.ru.dto.request.*;
@@ -21,13 +23,13 @@ public class TicketResource {
     private TicketService ticketService;
 
     @GET
-    public Response getTickets(@QueryParam("page") @DefaultValue("0") Long page,
-            @QueryParam("size") @DefaultValue("20") Integer size) {
+    public Response getTickets(@QueryParam("page") @DefaultValue("0") @Min(0) Long page,
+            @QueryParam("size") @DefaultValue("20") @Min(1) @Max(100) Integer size) {
         return Response.ok(ticketService.getTickets(page, size)).build();
     }
     @POST
     @Path("/search")
-    public Response searchTickets(@Valid SearchDto<TicketSearchFilterDto> dto) {
+    public Response searchTickets(@NotNull @Valid SearchDto<TicketSearchFilterDto> dto) {
         return Response.ok(ticketService.search(dto)).build();
     }
 

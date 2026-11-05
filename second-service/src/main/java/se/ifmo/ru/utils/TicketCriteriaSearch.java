@@ -29,59 +29,62 @@ public final class TicketCriteriaSearch {
 
     private static void addTicketFields(CriteriaBuilder cb, Root<Ticket> ticket,
                                          TicketSearchFilterDto filter, List<Predicate> result) {
-        add(result, filter.id(),
+        add(result, filter.getId(),
                 value -> cb.equal(ticket.get("id"), value));
-        add(result, filter.name(),
+        add(result, filter.getNameContains(),
                 value -> cb.like(cb.lower(ticket.get("name")), contains(value), '\\'));
-        add(result, filter.priceFrom(),
+        add(result, filter.getPriceFrom(),
                 value -> cb.ge(ticket.get("price"), value));
-        add(result, filter.priceTo(),
+        add(result, filter.getPriceTo(),
                 value -> cb.le(ticket.get("price"), value));
-        add(result, filter.type(),
-                value -> cb.equal(ticket.get("type"), value));
-        add(result, filter.eventId(),
+        if (filter.isTypeSpecified()) {
+            result.add(filter.getType() == null
+                    ? cb.isNull(ticket.get("type"))
+                    : cb.equal(ticket.get("type"), filter.getType()));
+        }
+        add(result, filter.getEventId(),
                 value -> cb.equal(ticket.get("eventId"), value));
     }
 
     private static void addCoordinates(CriteriaBuilder cb, Root<Ticket> ticket,
                                          TicketSearchFilterDto filter, List<Predicate> result) {
-        add(result, filter.coordinatesXFrom(),
-                value -> cb.ge(ticket.get("coordinates").get("x"), value.doubleValue()));
-        add(result, filter.coordinatesXTo(),
-                value -> cb.le(ticket.get("coordinates").get("x"), value.doubleValue()));
-        add(result, filter.coordinatesYFrom(),
+        add(result, filter.getCoordinatesXFrom(),
+                value -> cb.ge(ticket.get("coordinates").get("x"), value));
+        add(result, filter.getCoordinatesXTo(),
+                value -> cb.le(ticket.get("coordinates").get("x"), value));
+        add(result, filter.getCoordinatesYFrom(),
                 value -> cb.ge(ticket.get("coordinates").get("y"), value));
-        add(result, filter.coordinatesYTo(),
+        add(result, filter.getCoordinatesYTo(),
                 value -> cb.le(ticket.get("coordinates").get("y"), value));
     }
 
     private static void addCreationDate(CriteriaBuilder cb, Root<Ticket> ticket,
                                          TicketSearchFilterDto filter, List<Predicate> result) {
-        add(result, filter.creationDateFrom(),
-                value -> cb.greaterThanOrEqualTo(ticket.<Date>get("creationDate"), Date.from(value)));
-        add(result, filter.creationDateTo(),
-                value -> cb.lessThanOrEqualTo(ticket.<Date>get("creationDate"), Date.from(value)));
+        add(result, filter.getCreationDateFrom(),
+                value -> cb.greaterThanOrEqualTo(ticket.<Date>get("creationDate"), Date.from(value.toInstant())));
+        add(result, filter.getCreationDateTo(),
+                value -> cb.lessThanOrEqualTo(ticket.<Date>get("creationDate"), Date.from(value.toInstant())));
     }
 
     private static void addPersonFields(CriteriaBuilder cb, Root<Ticket> ticket,
                                          TicketSearchFilterDto filter, List<Predicate> result) {
-        add(result, filter.personBirthday(),
+        add(result, filter.getPersonBirthday(),
                 value -> cb.equal(ticket.get("person").get("birthday"), value));
-        add(result, filter.personBirthdayFrom(),
+        add(result, filter.getPersonBirthdayFrom(),
                 value -> cb.greaterThanOrEqualTo(ticket.get("person").get("birthday"), value));
-        add(result, filter.personBirthdayTo(),
+        add(result, filter.getPersonBirthdayTo(),
                 value -> cb.lessThanOrEqualTo(ticket.get("person").get("birthday"), value));
-        add(result, filter.personWeight(),
+        add(result, filter.getPersonWeight(),
                 value -> cb.equal(ticket.get("person").get("weight"), value));
-        add(result, filter.personWeightFrom(),
+        add(result, filter.getPersonWeightFrom(),
                 value -> cb.ge(ticket.get("person").get("weight"), value));
-        add(result, filter.personWeightTo(),
+        add(result, filter.getPersonWeightTo(),
                 value -> cb.le(ticket.get("person").get("weight"), value));
-        add(result, filter.personLocationX(),
+        add(result, filter.getPersonLocationX(),
                 value -> cb.equal(ticket.get("person").get("location").get("x"), value));
-        add(result, filter.personLocationY(),
+        add(result, filter.getPersonLocationY(),
                 value -> cb.equal(ticket.get("person").get("location").get("y"), value));
-        add(result, filter.personLocationName(),
+        add(result, filter.getPersonLocationNameContains(),
                 value -> cb.like(cb.lower(ticket.get("person").get("location").get("name")), contains(value), '\\'));
     }
 }

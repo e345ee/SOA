@@ -1,19 +1,22 @@
 package se.ifmo.ru.dto.request;
 
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
+import lombok.Data;
+import se.ifmo.ru.validation.ValidPersonSearchRanges;
 
 import java.time.LocalDate;
 
-public record PersonSearchFilterDto (
-    @Min(1) Long id,
-    LocalDate birthday,
-    LocalDate birthdayFrom,
-    LocalDate birthdayTo,
-    @Min(1) Integer weight,
-    @Min(1) Integer weightFrom,
-    @Min(1) Integer weightTo,
-    Integer locationX,
-    Integer locationY,
-    String locationName
-    ){
+@Data
+@ValidPersonSearchRanges
+public class PersonSearchFilterDto {
+    @Positive private Long id;
+    private LocalDate birthday;
+    private LocalDate birthdayFrom;
+    private LocalDate birthdayTo;
+    @Positive private Integer weight;
+    @Positive private Integer weightFrom;
+    @Positive private Integer weightTo;
+    private Integer locationX;
+    private Integer locationY;
+    private String locationNameContains;
 }

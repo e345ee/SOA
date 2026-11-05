@@ -1,5 +1,7 @@
 package se.ifmo.ru.service;
 
+import se.ifmo.ru.utils.SearchValidation;
+import java.util.Set;
 import jakarta.data.Sort;
 import jakarta.data.page.PageRequest;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -86,6 +88,7 @@ public class TicketService {
     }
 
     public ResponsePaginationDto<TicketResponseDto> search(SearchDto<TicketSearchFilterDto> dto) {
+        SearchValidation.validateSorts(dto.getSort(), Set.of("id", "name", "coordinates.x", "coordinates.y", "creationDate", "price", "type", "person.birthday", "person.weight", "person.location.x", "person.location.y", "person.location.name", "eventId"));
         List<Sort<Ticket>> sorts = new ArrayList<>();
         if (dto.getSort() != null) {
             for (SortDto s : dto.getSort()) {

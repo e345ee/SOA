@@ -3,6 +3,8 @@ package se.ifmo.ru.controller;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
@@ -26,8 +28,8 @@ public class PersonResource {
     @Inject
     private PersonService personService;
     @GET
-    public Response getPersons(@QueryParam("page") @DefaultValue("0") Long page,
-            @QueryParam("size") @DefaultValue("20") Integer size) {
+    public Response getPersons(@QueryParam("page") @DefaultValue("0") @Min(0) Long page,
+            @QueryParam("size") @DefaultValue("20") @Min(1) @Max(100) Integer size) {
         return Response.ok(personService.getPersons(page, size)).build();
     }
 
@@ -59,7 +61,7 @@ public class PersonResource {
 
     @POST
     @Path("/search")
-    public Response searchPerson(SearchDto<PersonSearchFilterDto> searchDto) {
+    public Response searchPerson(@NotNull @Valid SearchDto<PersonSearchFilterDto> searchDto) {
         return Response.ok(personService.search(searchDto)).build();
     }
 

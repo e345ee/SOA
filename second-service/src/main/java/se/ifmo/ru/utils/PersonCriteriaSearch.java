@@ -26,29 +26,29 @@ public final class PersonCriteriaSearch {
 
     private static void addPersonFields(CriteriaBuilder cb, Root<Person> person,
                                          PersonSearchFilterDto filter, List<Predicate> result) {
-        add(result, filter.id(),
+        add(result, filter.getId(),
                 value -> cb.equal(person.get("id"), value));
-        add(result, filter.birthday(),
+        add(result, filter.getBirthday(),
                 value -> cb.equal(person.get("birthday"), value));
-        add(result, filter.birthdayFrom(),
+        add(result, filter.getBirthdayFrom(),
                 value -> cb.greaterThanOrEqualTo(person.get("birthday"), value));
-        add(result, filter.birthdayTo(),
+        add(result, filter.getBirthdayTo(),
                 value -> cb.lessThanOrEqualTo(person.get("birthday"), value));
-        add(result, filter.weight(),
+        add(result, filter.getWeight(),
                 value -> cb.equal(person.get("weight"), value));
-        add(result, filter.weightFrom(),
+        add(result, filter.getWeightFrom(),
                 value -> cb.ge(person.get("weight"), value));
-        add(result, filter.weightTo(),
+        add(result, filter.getWeightTo(),
                 value -> cb.le(person.get("weight"), value));
     }
 
     private static void addLocation(CriteriaBuilder cb, Root<Person> person,
                                          PersonSearchFilterDto filter, List<Predicate> result) {
-        add(result, filter.locationX(),
+        add(result, filter.getLocationX(),
                 value -> cb.equal(person.get("location").get("x"), value));
-        add(result, filter.locationY(),
+        add(result, filter.getLocationY(),
                 value -> cb.equal(person.get("location").get("y"), value));
-        add(result, filter.locationName(),
+        add(result, filter.getLocationNameContains(),
                 value -> cb.like(cb.lower(person.get("location").get("name")), contains(value), '\\'));
     }
 }

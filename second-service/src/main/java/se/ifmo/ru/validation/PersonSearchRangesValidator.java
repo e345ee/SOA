@@ -10,12 +10,12 @@ public class PersonSearchRangesValidator implements RangesValidator,
     public boolean isValid(PersonSearchFilterDto filter, ConstraintValidatorContext context) {
         if (filter == null) return true;
         context.disableDefaultConstraintViolation();
-        boolean validWeightRange = validateRange(filter.weightFrom(), filter.weightTo(),
-                "weightTo", "weightFrom должен быть не больше personWeightTo", context);
-        boolean weightValid = validateValueOrRange(filter.weight(),filter.weightFrom(),filter.weightTo(),
-                "weight", context);
-        boolean birthdayRangeValid = validateRange(filter.birthdayFrom(), filter.birthdayTo(), "birthdayTo",
+        boolean validWeightRange = validateRange(filter.getWeightFrom(), filter.getWeightTo(),
+                "weightTo", "weightFrom должен быть не больше weightTo", context);
+        boolean birthdayRangeValid = validateRange(filter.getBirthdayFrom(), filter.getBirthdayTo(), "birthdayTo",
                 "birthdayFrom должен быть не позже birthdayTo", context);
-        return weightValid && validWeightRange && birthdayRangeValid;
+        boolean weightChoiceValid = validateValueOrRange(filter.getWeight(), filter.getWeightFrom(), filter.getWeightTo(),
+                "weight", context);
+        return validWeightRange && birthdayRangeValid && weightChoiceValid;
     }
 }

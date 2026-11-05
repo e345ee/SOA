@@ -1,37 +1,45 @@
 package se.ifmo.ru.dto.request;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Positive;
+import jakarta.json.bind.annotation.JsonbTransient;
+import jakarta.validation.constraints.*;
+import lombok.Data;
 import se.ifmo.ru.enums.TicketType;
 import se.ifmo.ru.validation.ValidTicketsSearchRanges;
+
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 
+@Data
 @ValidTicketsSearchRanges
-public record TicketSearchFilterDto(
-        @Positive Long id,
-        String name,
-        @Min(-495) BigDecimal coordinatesXFrom,
-        @Min(-495) BigDecimal coordinatesXTo,
-        @Min(-262) Integer coordinatesYFrom,
-        @Min(-262) Integer coordinatesYTo,
-        Instant creationDateFrom,
-        Instant creationDateTo,
-        @Min(0) Float priceFrom,
-        @Min(0) Float priceTo,
-        TicketType type,
-        LocalDate personBirthday,
-        LocalDate personBirthdayFrom,
-        LocalDate personBirthdayTo,
-        @Min(1) Integer personWeight,
-        @Min(1) Integer personWeightFrom,
-        @Min(1) Integer personWeightTo,
-        Integer personLocationX,
-        Integer personLocationY,
-        String personLocationName,
-        @Min(1)Long eventId
+public class TicketSearchFilterDto {
+    @Positive private Long id;
+    @Size(min = 1) private String nameContains;
+    @DecimalMin(value = "-495", inclusive = false) private BigDecimal coordinatesXFrom;
+    private BigDecimal coordinatesXTo;
+    @Min(-262) private Integer coordinatesYFrom;
+    private Integer coordinatesYTo;
+    private OffsetDateTime creationDateFrom;
+    private OffsetDateTime creationDateTo;
+    @Positive private Float priceFrom;
+    @Positive private Float priceTo;
+    private TicketType type;
+    private LocalDate personBirthday;
+    private LocalDate personBirthdayFrom;
+    private LocalDate personBirthdayTo;
+    @Positive private Integer personWeight;
+    @Positive private Integer personWeightFrom;
+    @Positive private Integer personWeightTo;
+    private Integer personLocationX;
+    private Integer personLocationY;
+    private String personLocationNameContains;
+    @Positive private Long eventId;
 
-) {
+    @JsonbTransient
+    private boolean typeSpecified;
 
+    public void setType(TicketType type) {
+        this.type = type;
+        this.typeSpecified = true;
+    }
 }

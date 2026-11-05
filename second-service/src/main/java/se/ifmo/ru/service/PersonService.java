@@ -1,5 +1,7 @@
 package se.ifmo.ru.service;
 
+import se.ifmo.ru.utils.SearchValidation;
+import java.util.Set;
 import jakarta.data.Sort;
 import jakarta.data.page.PageRequest;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -63,6 +65,7 @@ public class PersonService {
     }
 
     public ResponsePaginationDto<PersonResponseDto> search(SearchDto<PersonSearchFilterDto> requestDto) {
+        SearchValidation.validateSorts(requestDto.getSort(), Set.of("id", "birthday", "weight", "location.x", "location.y", "location.name"));
         List<Sort<Person>> sorts = new ArrayList<>();
         if (requestDto.getSort() != null) {
             for (var item : requestDto.getSort()) {
