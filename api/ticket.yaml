@@ -1023,6 +1023,82 @@ paths:
                 status: 400
                 detail: некорректные данные
 
+  /tickets/discount/{ticket-id}/{person-id}/{discount}:
+    post:
+      tags:
+        - Tickets
+      description: >-
+        Создать новый билет на основе указанного для выбранного человека,
+        применив скидку от 0 до 100 процентов включительно. Итоговая цена
+        в рублях равна max(1, исходная цена * (1 - discount / 100)).
+        При скидке 100 процентов новый билет стоит 1 рубль.
+        Исходный билет не изменяется. Клиент передаёт один UUID в Idempotency-Key на продажу.
+        При таймауте или HTTP 502 повторите команду с тем же ключом и параметрами.
+        Сервис вернёт сохранённый ответ 201, даже если исходный билет изменился.
+        Для намеренной новой продажи используйте новый ключ.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: ticket-id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: person-id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: discount
+          in: path
+          required: true
+          description: Скидка в процентах. Цена после применения скидки не может быть ниже 1 рубля.
+          schema:
+            type: number
+            format: float
+            minimum: 0
+            maximum: 100
+      responses:
+        '201':
+          description: Новый билет успешно создан; цена после скидки не ниже 1 рубля.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '400':
+          description: Некорректный идентификатор или размер скидки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Bad Request
+                status: 400
+                detail: некорректные данные
+        '404':
+          description: Исходный билет или человек не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                title: Not Found
+                status: 404
+                detail: Человек с id=13 не найден
+        '409':
+          description: Ключ уже использован с другими параметрами
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /tickets/cancel-event/{event-id}:
     post:
       tags:

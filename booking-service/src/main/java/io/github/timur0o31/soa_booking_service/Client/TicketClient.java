@@ -1,7 +1,5 @@
 package io.github.timur0o31.soa_booking_service.Client;
 
-import io.github.timur0o31.soa_booking_service.dto.TicketCreateDto;
-import io.github.timur0o31.soa_booking_service.model.Ticket;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -10,13 +8,13 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.WebApplicationException;
+import io.github.timur0o31.soa.log.RequestTrace;
 import jakarta.ws.rs.ProcessingException;
 import io.github.timur0o31.soa_booking_service.error.exceptions.RequestValidationException;
 import io.github.timur0o31.soa_booking_service.error.exceptions.TicketServiceException;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.ClientResponseFilter;
-import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -24,12 +22,9 @@ import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @ApplicationScoped
 public class TicketClient {
-    private static final Logger LOG = Logger.getLogger(TicketClient.class.getName());
     private Client client;
     private URI ticketServiceUri;
 
@@ -70,12 +65,6 @@ public class TicketClient {
                     .connectTimeout(connectTimeoutMs, TimeUnit.MILLISECONDS)
                     .readTimeout(readTimeoutMs, TimeUnit.MILLISECONDS)
                     .property("jersey.config.client.followRedirects", false)
-                    .register((ClientResponseFilter) (request, response) -> {
-                        if (response.getStatus() >= 400) {
-                            LOG.log(Level.WARNING, "Ticket Service returned HTTP {0} for {1} {2}",
-                                    new Object[]{response.getStatus(), request.getMethod(), request.getUri().getPath()});
-                        }
-                    })
                     .build();
         } catch (java.io.IOException | java.security.GeneralSecurityException e) {
             throw new IllegalStateException("Cannot initialize Ticket Service TLS trust; check configured files", e);
@@ -86,59 +75,36 @@ public class TicketClient {
     void onApplicationStarted(@Observes @Initialized(ApplicationScoped.class) Object event) {
     }
 
-    public Ticket getTicketById(Long ticketId){
-        WebTarget target = client.target(ticketServiceUri).path("tickets/"+ticketId);
-        try (Response response = target.request(MediaType.APPLICATION_JSON).get()) {
-            if (response.getStatus() == 404) {
-                throw new NotFoundException("Билет с id=" + ticketId + " не найден");
-            }
-            if (response.getStatus() != 200) {
-                throw new TicketServiceException("Сервис билетов вернул HTTP " + response.getStatus());
-            }
-            return readTicket(response);
-        }catch (ProcessingException e) {
-            throw new TicketServiceException("Не удалось обратиться к сервису билетов", e);
-        }
-    }
-
-    public Ticket createTicket(TicketCreateDto ticketCreateDto){
-        WebTarget target = client.target(ticketServiceUri).path("tickets/");
-        try (Response response = target.request(MediaType.APPLICATION_JSON).post(Entity.json(ticketCreateDto))) {
-            if (response.getStatus() == 400) {
-                throw new RequestValidationException("ticket", "Сервис билетов отклонил данные нового билета");
-            }
-            if (response.getStatus() == 404) {
-                throw new NotFoundException("Человек с id=" + ticketCreateDto.getPersonId() + " не найден");
-            }
-            if (response.getStatus() != 201) {
-                throw new TicketServiceException("Сервис билетов вернул HTTP " + response.getStatus());
-            }
-            return readTicket(response);
-        } catch (ProcessingException e) {
-            throw new TicketServiceException("Не удалось обратиться к сервису билетов", e);
-        }
+    public String sell(long ticketId, long personId, float discount, String key) {
+        WebTarget target = client.target(ticketServiceUri).path("tickets/discount")
+                .path(Long.toString(ticketId)).path(Long.toString(personId)).path(Float.toString(discount));
+        return post(target, "sell", key, 201);
     }
 
     public void cancelEvent(Long eventId) {
-        WebTarget target = client.target(ticketServiceUri).path("tickets/cancel-event/" + eventId);
-        try (Response response = target.request().post(null)) {
-            if (response.getStatus() == 404) {
-                throw new NotFoundException("Билеты на событие не найдены");
-            }
-            if (response.getStatus() != 204) {
-                throw new TicketServiceException("Ошибка отмены: сервис билетов вернул HTTP " + response.getStatus());
-            }
-        } catch (ProcessingException exception) {
-            throw new TicketServiceException("Не удалось обратиться к сервису билетов", exception);
-        }
+        post(client.target(ticketServiceUri).path("tickets/cancel-event/" + eventId), "cancel", null, 204);
     }
 
-    private Ticket readTicket(Response response) {
-        Ticket ticket = response.readEntity(Ticket.class);
-        if (ticket == null) {
-            throw new TicketServiceException("Сервис билетов вернул пустой ответ");
+    private String post(WebTarget target, String operation, String key, int expected) {
+        long start = System.nanoTime();
+        int status = 0;
+        var request = target.request(MediaType.APPLICATION_JSON).header(RequestTrace.HEADER, RequestTrace.requestId());
+        if (key != null) request.header("Idempotency-Key", key);
+        try (Response response = request.post(null)) {
+            status = response.getStatus();
+            if (status == 404) throw new NotFoundException("Билет, человек или событие не найдены");
+            if (status == 409) throw new WebApplicationException("Ключ уже использован для другой продажи", 409);
+            if (status == 400) throw new RequestValidationException("request", "Сервис билетов отклонил параметры");
+            if (status != expected) throw new TicketServiceException("Сервис билетов вернул HTTP " + status);
+            if (expected == 204) return null;
+            String body = response.readEntity(String.class);
+            if (body == null || body.isBlank()) throw new TicketServiceException("Пустой ответ сервиса билетов");
+            return body;
+        } catch (ProcessingException exception) {
+            throw new TicketServiceException("Не удалось получить ответ сервиса билетов", exception);
+        } finally {
+            RequestTrace.downstream(operation, status, start);
         }
-        return ticket;
     }
 
     @PreDestroy
