@@ -10,6 +10,8 @@ import se.ifmo.ru.dto.response.TicketResponseDto;
 import se.ifmo.ru.service.TicketService;
 import se.ifmo.ru.service.EventCancellationService;
 import java.net.URI;
+import java.util.UUID;
+import se.ifmo.ru.service.DiscountSaleService;
 
 @Path("/tickets")
 @Produces(MediaType.APPLICATION_JSON)
@@ -20,6 +22,19 @@ public class TicketResource {
 
     @Inject
     private EventCancellationService eventCancellationService;
+
+    @Inject
+    private DiscountSaleService sales;
+
+    @POST
+    @Path("/discount/{ticket-id}/{person-id}/{discount}")
+    public Response sell(@PathParam("ticket-id") @Min(1) Long ticketId,
+                         @PathParam("person-id") @Min(1) Long personId,
+                         @PathParam("discount") @DecimalMin("0") @DecimalMax("100") Float discount,
+                         @HeaderParam("Idempotency-Key") @NotNull @Pattern(regexp = "[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}") String key) {
+        String response = sales.sell(UUID.fromString(key), ticketId, personId, discount);
+        return Response.status(Response.Status.CREATED).entity(response).build();
+    }
 
     @POST
     @Path("/cancel-event/{event-id}")

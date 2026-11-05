@@ -48,7 +48,7 @@ function dateValid(value) {
  return Number.isFinite(date.getTime()) && date.toISOString().slice(0,10) === value;
 }
 function today() {
- const parts = new Intl.DateTimeFormat('en', {timeZone:'Europe/Moscow',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+ const parts = new Intl.DateTimeFormat('en', {year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
  const part = type => parts.find(p=>p.type===type).value;
  return `${part('year')}-${part('month')}-${part('day')}`;
 }
@@ -56,22 +56,46 @@ function dateTimeValid(value) {
  const match=value.match(/^([0-9]{4}-[0-9]{2}-[0-9]{2})T([0-9]{2}):([0-9]{2})(?::([0-9]{2})(?:\.([0-9]{1,3}))?)?(?:Z|[+-]([0-9]{2}):([0-9]{2}))?$/);
  return !!match && dateValid(match[1]) && +match[2]<24 && +match[3]<60 && +(match[4]??0)<60 && +(match[6]??0)<24 && +(match[7]??0)<60 && Number.isFinite(new Date(value).getTime());
 }
+function numericLimits(schema) {
+ if (schema.type === 'integer') return {maxLength:schema.format==='int32'?11:20,maxFractionDigits:0};
+ if (schema.type !== 'number') return null;
+ return schema.format==='float' ? {maxLength:16,maxFractionDigits:9} : {maxLength:24,maxFractionDigits:15};
+}
+function validateNumericText(value, schema) {
+ const limits=numericLimits(schema);
+ if (!limits) return;
+ if (value.length>limits.maxLength) throw new Error('Число слишком длинное.');
+ const pattern=schema.type==='integer' ? /^-?(?:0|[1-9]\d*)$/ : /^-?(?:0|[1-9]\d*)(?:\.\d+)?$/;
+ if (!pattern.test(value)) throw new Error(schema.type==='integer'?'Введите целое число без ведущих нулей.':'Введите число в формате 0.7 или 1.7 без запятой, ведущих нулей и экспоненты.');
+ const separator=value.indexOf('.');
+ if (separator>=0 && value.length-separator-1>limits.maxFractionDigits) throw new Error(`Допустимо не более ${limits.maxFractionDigits} знаков после точки.`);
+}
+const decimalFormat = new Intl.NumberFormat('en-US', {useGrouping:false, maximumSignificantDigits:21});
+function preservesDecimal(text, number, format) {
+ const canonical = text.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '').replace(/^-0$/, '0');
+ if (decimalFormat.format(number) !== canonical && !(number === 0 && canonical === '0')) return false;
+ if (format !== 'float' || Math.fround(number) === number) return true;
+ const single = Math.fround(number);
+ for (let digits = 1; digits <= 9; digits++) {
+  const candidate = Number(single.toPrecision(digits));
+  if (Math.fround(candidate) === single) return candidate === number;
+ }
+ return false;
+}
 function readValue(raw, schema, required) {
  schema = resolve(schema);
  const value = raw.trim();
  if(schema.uiAllowNull && value==='__null__')return null;
  if (!value) { if (required) throw new Error('Заполните это поле.'); return undefined; }
  let parsed = value;
+ validateNumericText(raw,schema);
  if (schema.type === 'integer') {
-  if (!/^-?\d+$/.test(value)) throw new Error('Введите целое число.');
   const integer=BigInt(value); const low=schema.format==='int32'?-2147483648n:-9223372036854775808n; const high=schema.format==='int32'?2147483647n:9223372036854775807n;
   if(integer<low || integer>high) throw new Error('Число выходит за допустимый диапазон.');
   parsed=integer>=-9007199254740991n && integer<=9007199254740991n ? Number(integer) : integer;
  } else if (schema.type === 'number') {
-  if (!/^-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(value)) throw new Error('Введите число.');
   parsed=Number(value); if (!Number.isFinite(parsed)) throw new Error('Введите конечное число в допустимом диапазоне.');
-  const nonzero=/[1-9]/.test(value.split(/[eE]/)[0]);
-  if ((parsed===0 && nonzero) || (schema.format==='float' && (!Number.isFinite(Math.fround(parsed)) || (parsed!==0 && Math.fround(parsed)===0)))) throw new Error('Число выходит за диапазон типа '+(schema.format==='float'?'float.':'double.'));
+  if (!preservesDecimal(value,parsed,schema.format)) throw new Error('Число потеряет точность. Уменьшите количество цифр.');
  }
  if (schema.enum && !schema.enum.includes(parsed)) throw new Error('Выберите значение из списка.');
  if (schema.minimum !== undefined && (schema.exclusiveMinimum ? parsed <= schema.minimum : parsed < schema.minimum)) throw new Error(`Значение должно быть ${schema.exclusiveMinimum?'больше':'не меньше'} ${schema.minimum}.`);
@@ -98,19 +122,31 @@ function fields(schema, prefix='') {
 function inputHTML(def, value='', placeholder='') {
  const schema=resolve(def.schema); const attributes=`name="${escape(def.path)}" aria-label="${escape(def.label)}" ${def.required?'required':''}`;
  if (schema.enum) return `<select ${attributes}><option value="">${def.required?'Выберите…':schema.uiAllowNull?'Любой':'Не задан'}</option>${schema.uiAllowNull?`<option value="__null__" ${value===null?'selected':''}>Без типа</option>`:''}${schema.enum.filter(x=>x!==null).map(x=>`<option value="${escape(x)}" ${String(x)===String(value)?'selected':''}>${escape(x)}</option>`).join('')}</select>`;
- if (schema.format==='date-time' && value) { const date=new Date(value); if(Number.isFinite(date.getTime())) value=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16); }
- return `<input ${attributes} type="${inputType(schema)}" ${schema.format==='date'?`min="0001-01-01" max="${schema.uiNoFuture?today():'9999-12-31'}"`:schema.format==='date-time'?'min="0001-01-01T00:00" max="9999-12-31T23:59"':''} ${['integer','number'].includes(schema.type)?`inputmode="${schema.type==='integer'?'numeric':'decimal'}"`:''} value="${escape(value)}" placeholder="${escape(placeholder)}" autocomplete="off">`;
+ if (schema.format==='date-time' && value) { const date=new Date(value); if(Number.isFinite(date.getTime())) value=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,-1); }
+ return `<input ${attributes} type="${inputType(schema)}" ${schema.format==='date'?`min="0001-01-01" max="${schema.uiNoFuture?today():'9999-12-31'}"`:schema.format==='date-time'?'step="0.001" min="0001-01-01T00:00" max="9999-12-31T23:59"':''} ${['integer','number'].includes(schema.type)?`inputmode="${schema.type==='integer'?'numeric':'decimal'}"`:''} value="${escape(value)}" placeholder="${escape(placeholder)}" autocomplete="off">`;
 }
 function fieldHTML(def, value='') { return `<label>${escape(def.label)}${def.required?' *':''}${inputHTML(def,value)}<span class="field-error" aria-live="polite"></span></label>`; }
+function readFieldValue(raw,def) {
+ if (def.originalNumber !== undefined && raw === String(def.originalNumber)) return def.originalNumber;
+ return readValue(raw,def.schema,def.required);
+}
 function bindForm(form, definitions) {
  form.noValidate=true; form._fields=definitions;
- for (const def of definitions) { const input=form.elements.namedItem(def.path); if(!input) continue; input.addEventListener('input',()=>{input.removeAttribute('aria-invalid'); const hint=input.closest('label')?.querySelector('.field-error'); if(hint)hint.textContent='';}); }
+ for (const def of definitions) { const input=form.elements.namedItem(def.path); if(!input) continue; input.addEventListener('input',()=>{
+   const hint=input.closest('label')?.querySelector('.field-error');
+   try {
+    if (numericLimits(def.schema) && input.value) readFieldValue(input.value,def);
+    input.removeAttribute('aria-invalid'); if(hint)hint.textContent='';
+   } catch(error) {
+    input.setAttribute('aria-invalid','true'); if(hint)hint.textContent=error.message;
+   }
+  }); }
 }
 function collect(form) {
  const body={}; let first;
  for (const def of form._fields??[]) {
   const input=form.elements.namedItem(def.path); if(!input || input.disabled)continue;
-  try { const value=readValue(input.value,def.schema,def.required); if(value!==undefined)set(body,def.path,value); input.removeAttribute('aria-invalid'); const hint=input.closest('label')?.querySelector('.field-error'); if(hint)hint.textContent=''; }
+  try { const value=readFieldValue(input.value,def); if(value!==undefined)set(body,def.path,value); input.removeAttribute('aria-invalid'); const hint=input.closest('label')?.querySelector('.field-error'); if(hint)hint.textContent=''; }
   catch(error) { input.setAttribute('aria-invalid','true'); const hint=input.closest('label')?.querySelector('.field-error'); if(hint)hint.textContent=error.message; first??=input; }
  }
  if(first){first.focus();throw new Error('Проверьте отмеченные поля.');}
@@ -121,10 +157,10 @@ function collect(form) {
 }
 function message(target, text='', type='error') { target.textContent=text; target.className='message '+type; target.setAttribute('role',type==='error'?'alert':'status'); }
 class ApiError extends Error { constructor(text,status=0,uncertain=false){super(text);this.status=status;this.uncertain=uncertain;} }
-async function api(path,{method='GET',body,expected=200,signal}={}) {
+async function api(path,{method='GET',body,expected=200,signal,headers={}}={}) {
  const controller=new AbortController(); const abort=()=>controller.abort(); signal?.addEventListener('abort',abort,{once:true}); const timer=setTimeout(abort,25000);
  try {
-  const response=await fetch('/api/v1'+path,{method,headers:{Accept:'application/json',...(body!==undefined?{'Content-Type':'application/json'}:{})},body:body===undefined?undefined:stringify(body),signal:controller.signal,credentials:'same-origin',cache:'no-store'});
+  const response=await fetch('/api/v1'+path,{method,headers:{...headers,Accept:'application/json',...(body!==undefined?{'Content-Type':'application/json'}:{})},body:body===undefined?undefined:stringify(body),signal:controller.signal,credentials:'same-origin',cache:'no-store'});
   const raw=await response.text(); let data; try{if(raw.trim())data=parseJSON(raw);}catch{}
   if(response.status!==expected) {
    const generic={400:'Сервер отклонил запрос.',404:'Объект или операция не найдены.',405:'Операция не поддерживается сервером.',409:'Операция конфликтует с текущими данными.',500:'Внутренняя ошибка сервера.',502:'Сервис не смог выполнить обращение к Ticket Service.',503:'Сервис временно недоступен.'};
@@ -145,10 +181,19 @@ async function api(path,{method='GET',body,expected=200,signal}={}) {
 function format(value,key='') {
  if(value===undefined || value===null)return '—';
  if(/birthday$/.test(key) && /^\d{4}-\d{2}-\d{2}$/.test(String(value)))return String(value).split('-').reverse().join('.');
- if(key==='creationDate'){const date=new Date(value);if(Number.isFinite(date.getTime()))return new Intl.DateTimeFormat('ru-RU',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Moscow'}).format(date);}
+ if(key==='creationDate'){const date=new Date(value);if(Number.isFinite(date.getTime()))return new Intl.DateTimeFormat('ru-RU',{dateStyle:'short',timeStyle:'short'}).format(date);}
  if(typeof value==='object')return stringify(value);
  return String(value);
 }
+function displayValue(value,key) {
+ const text = escape(format(value,key));
+ return key === 'creationDate' && value ? `<time datetime="${escape(value)}">${text}</time>` : text;
+}
+function refreshDisplayedTimes() {
+ for (const time of $$('time[datetime]')) time.textContent = format(time.dateTime,'creationDate');
+}
+window.addEventListener('focus',refreshDisplayedTimes);
+document.addEventListener('visibilitychange',()=>{if (!document.hidden) refreshDisplayedTimes();});
 function headerHTML(cols,sorting=[]) { return `<tr>${cols.map(([key])=>{const index=sorting.findIndex(x=>x.field===key);const active=sorting[index];return `<th class="sortable" aria-sort="${active?(active.direction==='ASC'?'ascending':'descending'):'none'}"><button type="button" data-sort="${escape(key)}" title="Сортировать: ${escape(labels[key])}. Shift — добавить поле">${escape(labels[key])} ${active?(active.direction==='ASC'?'↑':'↓')+(sorting.length>1?index+1:''):''}</button></th>`;}).join('')}<th>Действия</th></tr>`; }
 function searchFieldSchema(key){const schema=resolve(filterSchema().properties[key]);return {...schema,uiAllowNull:schema.nullable===true};}
 function filterDefs() {return columns().flatMap(([field,keys])=>keys.map(key=>({path:key,schema:searchFieldSchema(key),required:false,label:labels[field]+(key.endsWith('From')?' · от':key.endsWith('To')?' · до':keys[0].includes('Contains')?' · содержит':'')})));}
@@ -190,7 +235,7 @@ async function loadList(){
  }catch(error){if(version!==generation||current!==entity)return;state.data=null;state.error=error;const pending=error.status===202;message($('#list-message'),pending?'':error.message);$('#rows').innerHTML=`<tr><td class="empty" colspan="${columns().length+1}">${pending?'Кажется, ничего не найдено.':'Нет загруженных данных.<br>Исправьте ошибку или нажмите «Обновить».'}</td></tr>`;}
  finally{if(version===generation&&current===entity){app.setAttribute('aria-busy','false');renderPager();}}
 }
-function renderRows(){const data=states[entity].data;$('#rows').innerHTML=data.content.length?data.content.map((row,index)=>`<tr>${columns().map(([key])=>`<td title="${escape(get(row,key))}">${escape(format(get(row,key),key))}</td>`).join('')}<td><div class="row-actions"><button type="button" data-open="${index}">Открыть</button><button type="button" data-edit="${index}">Обновить</button><button type="button" data-delete="${index}">Удалить</button></div></td></tr>`).join(''):`<tr><td class="empty" colspan="${columns().length+1}">Ничего не найдено. Измените фильтры или создайте объект.</td></tr>`;
+function renderRows(){const data=states[entity].data;$('#rows').innerHTML=data.content.length?data.content.map((row,index)=>`<tr>${columns().map(([key])=>`<td title="${escape(get(row,key))}">${displayValue(get(row,key),key)}</td>`).join('')}<td><div class="row-actions"><button type="button" data-open="${index}">Открыть</button><button type="button" data-edit="${index}">Обновить</button><button type="button" data-delete="${index}">Удалить</button></div></td></tr>`).join(''):`<tr><td class="empty" colspan="${columns().length+1}">Ничего не найдено. Измените фильтры или создайте объект.</td></tr>`;
  $$('[data-open]').forEach(button=>button.onclick=()=>readObject(data.content[button.dataset.open].id));$$('[data-edit]').forEach(button=>button.onclick=()=>objectForm('edit',data.content[button.dataset.edit]));$$('[data-delete]').forEach(button=>button.onclick=()=>deleteForm(data.content[button.dataset.delete]));}
 function renderPager(){const state=states[entity];const data=state.data;$('#summary').textContent=data?(data.totalElements!==undefined?`Всего: ${data.totalElements}. На странице: ${data.content.length}.`:`На странице: ${data.content.length}.`):'Данные не загружены';$('#page-label').textContent='Страница '+(state.page+1)+(data?.totalPages?' из '+data.totalPages:'');$('#previous').disabled=state.page===0;$('#next').disabled=!data||!(data.hasNext??(data.totalPages!==undefined?state.page+1<data.totalPages:data.content.length===state.size));}
 function showModal(title,content){modal.innerHTML=`<div class="dialog-head"><h2 id="modal-title">${escape(title)}</h2><button type="button" class="close" aria-label="Закрыть">×</button></div>${content}`;$('.close',modal).onclick=()=>modal.close();if(!modal.open)modal.showModal();$('input:not(:disabled),select:not(:disabled)',modal)?.focus();}
@@ -253,23 +298,36 @@ function objectForm(mode,record={}){
   html=common.map(def=>fieldHTML(def,get(record,def.path))).join('')+'<label class="wide">Человек<select id="person-mode"><option value="id">Выбрать из списка</option><option value="new">Создать нового вместе с билетом</option></select></label><div class="wide" id="existing-person">'+personPickerHTML(personIdDef)+'</div><div class="wide form-grid" id="new-person" hidden>'+person.map(def=>fieldHTML(def)).join('')+'</div>';
  }else html=defs.map(def=>fieldHTML(def,get(record,def.path))).join('');
  showModal(title,`<form id="object-form"><div class="form-grid">${html}</div><div id="form-message" class="message" aria-live="polite"></div><div class="dialog-actions">${cancelButton()}<button type="submit" class="primary">${creating?'Создать':'Сохранить'}</button></div></form>`);
+ for (const def of defs) {
+  const previous=get(record,def.path);
+  if (!creating && def.schema.type==='number' && Number.isFinite(previous)) def.originalNumber=previous;
+ }
  const form=$('#object-form');bindForm(form,defs);attachCancel();if(!creating)for(const def of defs){if(def.path==='id'||def.path.endsWith('.id'))form.elements.namedItem(def.path).readOnly=true;}
  let picker;
  if(personIdDef){picker=personPicker(form,personIdDef,creating?null:record.person);const update=()=>{const existing=$('#person-mode').value==='id';$('#existing-person').hidden=!existing;$('#new-person').hidden=existing;$$('input,select',$('#new-person')).forEach(input=>input.disabled=existing);picker.update();};$('#person-mode').onchange=update;update();picker.load();}
  form.onsubmit=async event=>{event.preventDefault();if($('button[type=submit]',form).disabled)return;const target=$('#form-message');let payload;try{payload=collect(form);picker?.validate();if(picker&&((payload.personId!==undefined)===(payload.person!==undefined)))throw new Error('Выберите существующего человека или создайте нового.');if(picker&&!creating&&payload.personId!==undefined){payload.person=picker.selected();delete payload.personId;}}catch(error){message(target,error.message);return;}const button=$('button[type=submit]',form);button.disabled=true;message(target,'Сохранение…','success');try{await api('/'+entity+(creating?'':'/'+encodeURIComponent(targetId)),{method:creating?'POST':'PUT',body:payload,expected:creating?201:200});modal.close();states[entity].page=0;await loadList();message($('#list-message'),creating?'Объект создан.':'Изменения сохранены.','success');}catch(error){message(target,error.message);if(!error.uncertain)button.disabled=false;}};
 }
-async function readObject(id,target){try{if(id===undefined)throw new Error('Сервер не передал ID объекта.');const object=await api('/'+entity+'/'+encodeURIComponent(id));if(!object||typeof object!=='object'||Array.isArray(object))throw new Error('Сервер вернул неверный формат объекта.');const details=fields(objectSchema());if(entity==='tickets'){details.unshift({path:'id',label:'ID'}, {path:'creationDate',label:labels.creationDate});}showModal((entity==='tickets'?'Билет':'Человек')+' №'+String(id),`<dl class="object-details">${details.map(def=>`<dt>${escape(def.label)}</dt><dd>${escape(format(get(object,def.path),def.path))}</dd>`).join('')}</dl><div class="dialog-actions">${cancelButton()}<button type="button" id="view-delete">Удалить</button><button type="button" id="view-edit" class="primary">Обновить</button></div>`);attachCancel();$('#view-edit').onclick=()=>objectForm('edit',object);$('#view-delete').onclick=()=>deleteForm(object);}catch(error){message(target??$('#list-message'),error.message);}}
+async function readObject(id,target){try{if(id===undefined)throw new Error('Сервер не передал ID объекта.');const object=await api('/'+entity+'/'+encodeURIComponent(id));if(!object||typeof object!=='object'||Array.isArray(object))throw new Error('Сервер вернул неверный формат объекта.');const details=fields(objectSchema());if(entity==='tickets'){details.unshift({path:'id',label:'ID'}, {path:'creationDate',label:labels.creationDate});}showModal((entity==='tickets'?'Билет':'Человек')+' №'+String(id),`<dl class="object-details">${details.map(def=>`<dt>${escape(def.label)}</dt><dd>${displayValue(get(object,def.path),def.path)}</dd>`).join('')}</dl><div class="dialog-actions">${cancelButton()}<button type="button" id="view-delete">Удалить</button><button type="button" id="view-edit" class="primary">Обновить</button></div>`);attachCancel();$('#view-edit').onclick=()=>objectForm('edit',object);$('#view-delete').onclick=()=>deleteForm(object);}catch(error){message(target??$('#list-message'),error.message);}}
 function deleteForm(record){let targetId;try{targetId=recordId(record);}catch(error){message($('#list-message'),error.message);return;}showModal('Удаление',`<p>Удалить ${noun()} №${escape(record.id)}?</p><div id="delete-message" class="message"></div><div class="dialog-actions">${cancelButton()}<button type="button" class="primary" id="confirm-delete">Удалить</button></div>`);attachCancel();$('#confirm-delete').onclick=async event=>{event.currentTarget.disabled=true;try{await api('/'+entity+'/'+encodeURIComponent(targetId),{method:'DELETE',expected:204});modal.close();await loadList();message($('#list-message'),'Объект удалён.','success');}catch(error){message($('#delete-message'),error.message);if(!error.uncertain)$('#confirm-delete').disabled=false;}};}
 async function statistic(path,label){const target=$('#statistics-result');message(target,'Загрузка…','success');try{const value=await api(path);if(typeof value!=='number'||!Number.isFinite(value))throw new Error('Сервер не вернул числовой результат.');message(target,label+': '+String(value),'success');}catch(error){message(target,error.message);}}
 function countPersonForm(){const defs=fields(schemas().Person);showModal('Количество билетов по человеку',`<form id="count-form"><div class="form-grid">${defs.map(def=>fieldHTML(def)).join('')}</div><div class="message" id="count-message"></div><div class="dialog-actions">${cancelButton()}<button type="submit" class="primary">Посчитать</button></div></form>`);const form=$('#count-form');bindForm(form,defs);attachCancel();form.onsubmit=async event=>{event.preventDefault();try{const payload=collect(form);const result=await api('/tickets/count-by-person',{method:'POST',body:payload});if(!['number','bigint'].includes(typeof result)||!/^\d+$/.test(String(result)))throw new Error('Сервер не вернул количество билетов.');message($('#count-message'),'Количество билетов: '+String(result),'success');}catch(error){message($('#count-message'),error.message);}};}
+function saleKey(url) {
+ const name = 'soa.pending-sale:' + url;
+ let key = sessionStorage.getItem(name);
+ if (!key) {
+  key = crypto.randomUUID();
+  sessionStorage.setItem(name,key);
+ }
+ return key;
+}
 function renderBooking(){document.title='SOA · Booking';app.innerHTML=`<h1>Booking Service</h1><div class="booking-grid"><section class="panel"><h2>Продажа со скидкой</h2><p>Создать билет на основе существующего для указанного человека.</p><form id="discount-form"><div class="form-grid" id="discount-fields"></div><button type="submit" class="primary">Создать билет со скидкой</button><div class="message" id="discount-message" aria-live="polite"></div></form></section><section class="panel"><h2>Отмена события</h2><p>Удалить все билеты указанного события.</p><form id="cancel-form"><div id="cancel-fields"></div><label class="check"><input type="checkbox" name="confirmation">Подтверждаю удаление всех билетов этого события</label><button type="submit" class="primary">Отменить событие</button><div class="message" id="cancel-message" aria-live="polite"></div></form></section></div><section id="booking-result" class="result" hidden><h2>Созданный билет</h2><div class="table-wrap"><table><thead><tr>${ticketColumns.map(([key])=>`<th>${escape(labels[key])}</th>`).join('')}</tr></thead><tbody id="booking-row"></tbody></table></div></section>`;
  const paths=contract.booking.paths;const discountPath='/sell/discount/{ticket-id}/{person-id}/{discount}';const cancelPath='/event/{event-id}/cancel';
- const makeDefs=path=>paths[path].post.parameters.map(p=>({path:p.name,label:({'ticket-id':'ID исходного билета','person-id':'ID человека','event-id':'ID события',discount:'Скидка, %'})[p.name],required:p.required,schema:resolve(p.schema,contract.booking)}));
+ const makeDefs=path=>paths[path].post.parameters.filter(p=>p.in==='path').map(p=>({path:p.name,label:({'ticket-id':'ID исходного билета','person-id':'ID человека','event-id':'ID события',discount:'Скидка, %'})[p.name],required:p.required,schema:resolve(p.schema,contract.booking)}));
  const discount=makeDefs(discountPath);const cancel=makeDefs(cancelPath);$('#discount-fields').innerHTML=discount.map(def=>fieldHTML(def)).join('');$('#cancel-fields').innerHTML=cancel.map(def=>fieldHTML(def)).join('');bindForm($('#discount-form'),discount);bindForm($('#cancel-form'),cancel);
  for(const [id,path,defs,expected]of [['discount',discountPath,discount,201],['cancel',cancelPath,cancel,204]]){
-  const form=$('#'+id+'-form');form.onsubmit=async event=>{event.preventDefault();const target=$('#'+id+'-message');let payload;try{payload=collect(form);if(id==='cancel'&&!form.elements.confirmation.checked)throw new Error('Подтвердите удаление билетов события.');}catch(error){message(target,error.message);return;}const button=$('button[type=submit]',form);button.disabled=true;message(target,'Выполнение…','success');if(id==='discount')$('#booking-result').hidden=true;
-   try{let url=path;for(const def of defs)url=url.replace('{'+def.path+'}',encodeURIComponent(String(payload[def.path])));const result=await api('/reservation'+url,{method:'POST',expected});if(id==='discount'){if(!result||typeof result!=='object'||Array.isArray(result))throw new ApiError('Сервер не вернул созданный билет. Проверьте результат перед повторной отправкой.',expected,true);$('#booking-row').innerHTML='<tr>'+ticketColumns.map(([key])=>`<td>${escape(format(get(result,key),key))}</td>`).join('')+'</tr>';$('#booking-result').hidden=false;}message(target,id==='discount'?'Билет создан.':'Событие отменено. Билеты удалены.','success');}
-   catch(error){message(target,error.message);if(error.uncertain)return;}button.disabled=false;
+  const form=$('#'+id+'-form');form.onsubmit=async event=>{event.preventDefault();if ($('button[type=submit]',form).disabled) return; const target=$('#'+id+'-message');let payload;try{payload=collect(form);if(id==='cancel'&&!form.elements.confirmation.checked)throw new Error('Подтвердите удаление билетов события.');}catch(error){message(target,error.message);return;}const button=$('button[type=submit]',form);button.disabled=true;message(target,'Выполнение…','success');if(id==='discount')$('#booking-result').hidden=true;
+   try{let url=path;for(const def of defs)url=url.replace('{'+def.path+'}',encodeURIComponent(String(payload[def.path])));const headers=id==='discount'?{'Idempotency-Key':saleKey(url)}:{};const result=await api('/reservation'+url,{method:'POST',expected,headers});if(id==='discount'){if(!result||typeof result!=='object'||Array.isArray(result))throw new ApiError('Сервер не вернул созданный билет. Проверьте результат перед повторной отправкой.',expected,true);$('#booking-row').innerHTML='<tr>'+ticketColumns.map(([key])=>`<td>${displayValue(get(result,key),key)}</td>`).join('')+'</tr>';$('#booking-result').hidden=false;sessionStorage.removeItem('soa.pending-sale:'+url);}message(target,id==='discount'?'Билет создан.':'Событие отменено. Билеты удалены.','success');}
+   catch(error){const retry=id==='discount' && (error.uncertain || error.status>=500);message(target,retry?'Результат продажи пока неизвестен. Повторите с теми же параметрами, чтобы получить билет.':error.message);if(id==='cancel' && error.uncertain)return;}button.disabled=false;
   };
  }
 }
