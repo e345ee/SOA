@@ -24,7 +24,6 @@ public interface TicketRepository extends CrudRepository<Ticket, Long> {
         CriteriaBuilder cb = session.getCriteriaBuilder();
         CriteriaQuery<Ticket> query = cb.createQuery(Ticket.class);
         Root<Ticket> root = query.from(Ticket.class);
-
         List<Order> orderBy = new ArrayList<>();
         if (sorts != null) {
             for (Sort<Ticket> sort : sorts) {
@@ -35,11 +34,10 @@ public interface TicketRepository extends CrudRepository<Ticket, Long> {
                 orderBy.add(sort.isAscending() ? cb.asc(column) : cb.desc(column));
             }
         }
-
+        root.fetch("person", JoinType.LEFT);
         query.select(root)
                 .where(TicketCriteriaSearch.predicates(cb, root, filter))
                 .orderBy(orderBy);
-
         int offset = Math.toIntExact(Math.multiplyExact(pageRequest.page() - 1, (long) pageRequest.size()));
         return session.createQuery(query)
                 .setFirstResult(offset)
@@ -70,25 +68,11 @@ public interface TicketRepository extends CrudRepository<Ticket, Long> {
                 .getSingleResult();
     }
 
-    default Long countByPersonValues(LocalDate birthday, Integer weight,
-                                     Integer x, Integer y, String name) {
+    default int deleteByEventId(long eventId) {
         return session()
-                .createNativeQuery("""
-                    SELECT COUNT(*) FROM tickets
-                    WHERE person_id IN (
-                        SELECT id FROM persons
-                        WHERE birthday = :birthday
-                          AND weight = :weight
-                          AND x = :x
-                          AND y = :y
-                          AND name = :name)
-                """, Long.class)
-                .setParameter("birthday", birthday)
-                .setParameter("weight", weight)
-                .setParameter("x", x)
-                .setParameter("y", y)
-                .setParameter("name", name)
-                .getSingleResult();
+                .createQuery("DELETE FROM Ticket t WHERE t.eventId = :eventId")
+                .setParameter("eventId", eventId)
+                .executeUpdate();
     }
 
     default Long countByPerson(PersonInputDto person) {

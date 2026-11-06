@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.util.function.Function;
 
 @Provider
-public class NumericParamConverter implements ParamConverterProvider {
+    public class NumericParamConverter implements ParamConverterProvider {
     @Override
     public <T> ParamConverter<T> getConverter(Class<T> type, Type genericType, Annotation[] annotations) {
         Function<String, ?> parser = type == Long.class ? Long::valueOf

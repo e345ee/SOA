@@ -104,9 +104,9 @@ public class TicketService {
             sorts.add(Sort.asc("id"));
         }
         TicketSearchFilterDto filter = dto.getFilter();
-        long total = ticketRepository.count(filter);
-        long totalPages = total / dto.getSize();
-        if (total % dto.getSize() != 0) {
+        long totalCount = ticketRepository.count(filter);
+        long totalPages = totalCount / dto.getSize();
+        if (totalCount % dto.getSize() != 0) {
             totalPages++;
         }
         List<TicketResponseDto> content;
@@ -119,7 +119,7 @@ public class TicketService {
                     .map(ticketMapper::toTicketResponseDto)
                     .toList();
         }
-        return ResponsePaginationDto.ans(content, dto.getPage(), dto.getSize(), total);
+        return ResponsePaginationDto.ans(content, dto.getPage(), dto.getSize(), totalCount);
     }
 
     public ResponsePaginationDto<TicketResponseDto> getTickets(long page, int size) {

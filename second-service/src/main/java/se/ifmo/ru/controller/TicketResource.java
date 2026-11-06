@@ -5,6 +5,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.Pattern;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import se.ifmo.ru.dto.request.*;
@@ -12,8 +15,11 @@ import se.ifmo.ru.dto.request.*;
 
 import se.ifmo.ru.dto.response.TicketResponseDto;
 import se.ifmo.ru.service.TicketService;
+import se.ifmo.ru.service.EventCancellationService;
+import se.ifmo.ru.service.DiscountSaleService;
 
 import java.net.URI;
+import java.util.UUID;
 
 @Path("/tickets")
 @Produces(MediaType.APPLICATION_JSON)
@@ -21,6 +27,32 @@ import java.net.URI;
 public class TicketResource {
     @Inject
     private TicketService ticketService;
+
+    @Inject
+    private EventCancellationService eventCancellationService;
+
+    @Inject
+    private DiscountSaleService discountSaleService;
+
+    @POST
+    @Path("/cancel-event/{event-id}")
+    public Response cancelEvent(@PathParam("event-id") @Min(1) Long eventId) {
+        eventCancellationService.cancelEvent(eventId);
+        return Response.noContent().build();
+    }
+
+    @POST
+    @Path("/discount/{ticket-id}/{person-id}/{discount}")
+    public Response sellWithDiscount(
+            @PathParam("ticket-id") @Min(1) Long ticketId,
+            @PathParam("person-id") @Min(1) Long personId,
+            @PathParam("discount") @DecimalMin("0") @DecimalMax("100") Float discount,
+            @HeaderParam("Idempotency-Key") @NotNull
+            @Pattern(regexp = "[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}") String key
+    ) {
+        String response = discountSaleService.sell(UUID.fromString(key), ticketId, personId, discount);
+        return Response.status(Response.Status.CREATED).entity(response).build();
+    }
 
     @GET
     public Response getTickets(@QueryParam("page") @DefaultValue("0") @Min(0) Long page,
@@ -39,6 +71,7 @@ public class TicketResource {
         URI location = uriInfo.getAbsolutePathBuilder().path(String.valueOf(responseDto.id())).build();
         return Response.created(location).entity(responseDto).build();
     }
+
     @DELETE
     @Path("/{id}")
     public Response deleteTicket(@PathParam("id") Long ticketId){

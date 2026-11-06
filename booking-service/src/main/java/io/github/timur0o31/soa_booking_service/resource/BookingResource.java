@@ -1,12 +1,13 @@
 package io.github.timur0o31.soa_booking_service.resource;
 
-import io.github.timur0o31.soa_booking_service.dto.TicketResponseDto;
 import io.github.timur0o31.soa_booking_service.service.BookingService;
 import jakarta.inject.Inject;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 import io.github.timur0o31.soa_booking_service.error.exceptions.RequestValidationException;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -18,7 +19,7 @@ public class BookingResource {
 
     @Inject
     private BookingService bookingService;
-
+    // не уверен, что стоит все делать через String
     private static long id(String value) {
         try {
             if (!value.matches("[0-9]+")) throw new IllegalArgumentException();
@@ -34,7 +35,8 @@ public class BookingResource {
     @Path("/sell/discount/{ticket-id}/{person-id}/{discount}")
     public Response createTicketWithDiscount(@PathParam("ticket-id") String ticketIdRaw,
                                              @PathParam("person-id") String personIdRaw,
-                                             @PathParam("discount") String discountRaw) {
+                                             @PathParam("discount") String discountRaw,
+                                             @HeaderParam("Idempotency-Key") String key) {
         Long ticketId = id(ticketIdRaw), personId = id(personIdRaw);
         Float discount;
         try {
@@ -44,9 +46,15 @@ public class BookingResource {
         } catch (RuntimeException e) {
             throw new RequestValidationException("discount", "Expected a finite float percentage");
         }
-        TicketResponseDto response = bookingService.createTicket(ticketId, personId, discount);
+        // регулярки зачем вообще?
+        if (key != null && !key.matches("[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}")) {
+            throw new RequestValidationException("Idempotency-Key", "Expected a UUID");
+        }
+        String operationKey = key == null ? UUID.randomUUID().toString() : key;
+        String response = bookingService.createTicket(ticketId, personId, discount, operationKey);
         return Response.status(Response.Status.CREATED)
                 .type(MediaType.APPLICATION_JSON)
+                .header("Idempotency-Key", operationKey)
                 .entity(response).build();
     }
 
