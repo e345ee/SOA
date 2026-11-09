@@ -10,8 +10,8 @@
             <property name = "jakarta.persistence.schema-generation.database.action" value ="none"/>
             <property name="hibernate.transaction.jta.platform"
                       value="org.hibernate.engine.transaction.jta.platform.internal.SunOneJtaPlatform"/>
-            <property name="hibernate.show_sql" value="false"/>
-            <property name="hibernate.connection.provider_class" value="se.ifmo.ru.repository.MeasuredConnectionProvider"/>
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
             <property name="hibernate.enhancer.enableLazyInitialization" value="false"/>
             <property name="hibernate.enhancer.enableDirtyTracking" value="false"/>
             <property name="hibernate.enhancer.enableAssociationManagement" value="false"/>

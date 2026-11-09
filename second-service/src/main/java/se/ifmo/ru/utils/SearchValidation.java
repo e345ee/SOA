@@ -16,10 +16,10 @@ public final class SearchValidation {
         if (sorts == null) return;
         for (SortDto sort : sorts) {
             if (sort == null || sort.field() == null || !allowedFields.contains(sort.field())) {
-                throw new RequestValidationException("sort.field", "Unknown sort field");
+                throw new RequestValidationException("sort.field", "Неизвестное поле сортировки");
             }
             if (!"ASC".equals(sort.direction()) && !"DESC".equals(sort.direction())) {
-                throw new RequestValidationException("sort.direction", "Expected ASC or DESC");
+                throw new RequestValidationException("sort.direction", "Ожидается ASC или DESC");
             }
         }
     }

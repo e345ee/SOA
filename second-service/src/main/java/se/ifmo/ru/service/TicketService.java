@@ -7,6 +7,7 @@ import jakarta.data.page.PageRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import se.ifmo.ru.dto.request.*;
 import se.ifmo.ru.error.exceptions.RequestValidationException;
 import se.ifmo.ru.error.exceptions.ResourceNotFoundException;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @ApplicationScoped
 public class TicketService {
     @Inject
@@ -33,36 +35,55 @@ public class TicketService {
     private TicketMapper ticketMapper;
 
     public TicketResponseDto findById(Long ticketId) {
+        log.info("Поиск билета: ticketId={}", ticketId);
         Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(
-                () -> new ResourceNotFoundException("Ticket with id " + ticketId + " not found"));
+                () -> new ResourceNotFoundException("Билет с id " + ticketId + " не найден"));
         return ticketMapper.toTicketResponseDto(ticket);
     }
 
     @Transactional
     public TicketResponseDto saveTicket(TicketCreateDto ticketCreateDto) {
+        log.info("Создание билета: eventId={}", ticketCreateDto.eventId());
         Person person = parsePerson(ticketCreateDto.personId(), ticketCreateDto.person());
         Ticket ticket = ticketMapper.toTicket(ticketCreateDto);
         ticket.setPerson(person);
-        return ticketMapper.toTicketResponseDto(ticketRepository.insert(ticket));
+        Ticket saved = ticketRepository.insert(ticket);
+        log.info("Запрос на создание билета выполнен: ticketId={}, eventId={}", saved.getId(), saved.getEventId());
+        return ticketMapper.toTicketResponseDto(saved);
+    }
+
+    @Transactional
+    public TicketResponseDto sellWithDiscount(long ticketId, long personId, float discount) {
+        log.info("Продажа билета со скидкой: ticketId={}, personId={}, скидка={}", ticketId, personId, discount);
+        TicketResponseDto source = findById(ticketId);
+        float price = (float) Math.max(1.0, source.price() * (1.0 - discount / 100.0));
+        TicketCreateDto sale = new TicketCreateDto(source.name(), source.coordinates(), price,
+                source.type(), personId, null, source.eventId());
+        return saveTicket(sale);
     }
 
     @Transactional
     public void deleteTicketById(Long ticketId){
+        log.info("Удаление билета: ticketId={}", ticketId);
         if (ticketRepository.findById(ticketId).isPresent()) {
             ticketRepository.deleteById(ticketId);
+            log.info("Запрос на удаление билета выполнен: ticketId={}", ticketId);
         }else{
-            throw new ResourceNotFoundException("Ticket with id " + ticketId + " not found");
+            throw new ResourceNotFoundException("Билет с id " + ticketId + " не найден");
         }
     }
 
     @Transactional
     public TicketResponseDto updateTicket(Long ticketId, TicketUpdateDto ticketCreateDto) {
+        log.info("Обновление билета: ticketId={}", ticketId);
         Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(
-                () -> new ResourceNotFoundException("Ticket with id " + ticketId + " not found"));
+                () -> new ResourceNotFoundException("Билет с id " + ticketId + " не найден"));
         Person person = parsePerson(null, ticketCreateDto.person());
         ticketMapper.updateTicket(ticketCreateDto, ticket);
         ticket.setPerson(person);
-        return ticketMapper.toTicketResponseDto(ticketRepository.update(ticket));
+        Ticket updated = ticketRepository.update(ticket);
+        log.info("Запрос на обновление билета выполнен: ticketId={}", ticketId);
+        return ticketMapper.toTicketResponseDto(updated);
     }
 
     private Person parsePerson(Long personId, PersonInputDto personDto) {
@@ -88,6 +109,7 @@ public class TicketService {
     }
 
     public ResponsePaginationDto<TicketResponseDto> search(SearchDto<TicketSearchFilterDto> dto) {
+        log.debug("Поиск билетов: страница={}, размер={}", dto.getPage(), dto.getSize());
         SearchValidation.validateSorts(dto.getSort(), Set.of("id", "name", "coordinates.x", "coordinates.y", "creationDate", "price", "type", "person.birthday", "person.weight", "person.location.x", "person.location.y", "person.location.name", "eventId"));
         List<Sort<Ticket>> sorts = new ArrayList<>();
         if (dto.getSort() != null) {

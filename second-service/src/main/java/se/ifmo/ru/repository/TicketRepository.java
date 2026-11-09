@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Repository(provider = "Hibernate", dataStore = "default")
-public interface TicketRepository extends CrudRepository<Ticket, Long> {
+public interface    TicketRepository extends CrudRepository<Ticket, Long> {
     StatelessSession session();
 
     default List<Ticket> search(TicketSearchFilterDto filter, PageRequest pageRequest, List<Sort<Ticket>> sorts) {

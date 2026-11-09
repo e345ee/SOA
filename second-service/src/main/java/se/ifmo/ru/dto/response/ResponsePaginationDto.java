@@ -2,10 +2,10 @@ package se.ifmo.ru.dto.response;
 
 import java.util.List;
 
-public record ResponsePaginationDto<T>(List<T> content, Long page, Long size, long totalElements,
-                                       long totalPages, boolean hasNext, boolean hasPrevious) {
-    public static <T> ResponsePaginationDto<T> ans(List<T> content, Long page,
-                                                   Long size, long totalElements) {
+public record ResponsePaginationDto<T>(List<T> content, Long page, Long size,
+                                       long totalElements, long totalPages,
+                                       boolean hasNext, boolean hasPrevious) {
+    public static <T> ResponsePaginationDto<T> ans(List<T> content, Long page, Long size, long totalElements) {
         long totalPages = totalElements / size;
         if (totalElements % size != 0) {
             totalPages++;

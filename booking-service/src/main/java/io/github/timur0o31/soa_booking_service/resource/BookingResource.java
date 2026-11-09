@@ -4,10 +4,8 @@ import io.github.timur0o31.soa_booking_service.service.BookingService;
 import jakarta.inject.Inject;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 import io.github.timur0o31.soa_booking_service.error.exceptions.RequestValidationException;
-import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -27,7 +25,7 @@ public class BookingResource {
             if (id < 1) throw new IllegalArgumentException();
             return id;
         } catch (RuntimeException e) {
-            throw new RequestValidationException("id", "Expected a positive int64 identifier");
+            throw new RequestValidationException("id", "Ожидается положительный идентификатор в диапазоне int64");
         }
     }
 
@@ -35,8 +33,7 @@ public class BookingResource {
     @Path("/sell/discount/{ticket-id}/{person-id}/{discount}")
     public Response createTicketWithDiscount(@PathParam("ticket-id") String ticketIdRaw,
                                              @PathParam("person-id") String personIdRaw,
-                                             @PathParam("discount") String discountRaw,
-                                             @HeaderParam("Idempotency-Key") String key) {
+                                             @PathParam("discount") String discountRaw) {
         Long ticketId = id(ticketIdRaw), personId = id(personIdRaw);
         Float discount;
         try {
@@ -44,17 +41,11 @@ public class BookingResource {
             discount = n.floatValue();
             if (!Float.isFinite(discount) || (discount == 0 && n.signum() != 0)) throw new IllegalArgumentException();
         } catch (RuntimeException e) {
-            throw new RequestValidationException("discount", "Expected a finite float percentage");
+            throw new RequestValidationException("discount", "Ожидается конечное число для процента скидки");
         }
-        // регулярки зачем вообще?
-        if (key != null && !key.matches("[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}")) {
-            throw new RequestValidationException("Idempotency-Key", "Expected a UUID");
-        }
-        String operationKey = key == null ? UUID.randomUUID().toString() : key;
-        String response = bookingService.createTicket(ticketId, personId, discount, operationKey);
+        String response = bookingService.createTicket(ticketId, personId, discount);
         return Response.status(Response.Status.CREATED)
                 .type(MediaType.APPLICATION_JSON)
-                .header("Idempotency-Key", operationKey)
                 .entity(response).build();
     }
 

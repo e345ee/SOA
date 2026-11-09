@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.util.function.Function;
 
 @Provider
-    public class NumericParamConverter implements ParamConverterProvider {
+public class NumericParamConverter implements ParamConverterProvider {
     @Override
     public <T> ParamConverter<T> getConverter(Class<T> type, Type genericType, Annotation[] annotations) {
         Function<String, ?> parser = type == Long.class ? Long::valueOf
@@ -22,7 +22,7 @@ import java.util.function.Function;
                 try {
                     return type.cast(parser.apply(value));
                 } catch (NumberFormatException exception) {
-                    throw new BadRequestException("Invalid numeric parameter", exception);
+                    throw new BadRequestException("Некорректный числовой параметр", exception);
                 }
             }
 
@@ -36,7 +36,7 @@ import java.util.function.Function;
         BigDecimal number = new BigDecimal(value);
         float result = number.floatValue();
         if (!Float.isFinite(result) || (result == 0 && number.signum() != 0)) {
-            throw new NumberFormatException("Outside float range");
+            throw new NumberFormatException("Значение выходит за диапазон типа float");
         }
         return result;
     }

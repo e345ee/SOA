@@ -21,7 +21,7 @@ final class TicketServiceTls {
         if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null
                 || uri.getUserInfo() != null || uri.getQuery() != null || uri.getFragment() != null
                 || uri.getPort() == 0 || uri.getPort() > 65535) {
-            throw new IllegalArgumentException("ticket.service.url must be an HTTPS base URI without credentials, query or fragment");
+            throw new IllegalArgumentException("ticket.service.url должен быть базовым HTTPS-адресом без учётных данных, параметров запроса и фрагмента");
         }
         return uri;
     }
@@ -40,7 +40,7 @@ final class TicketServiceTls {
             Arrays.fill(password, '\0');
         }
         if (store.size() == 0) {
-            throw new GeneralSecurityException("Ticket Service truststore must contain a trusted certificate");
+            throw new GeneralSecurityException("Хранилище доверенных сертификатов Ticket Service должно содержать доверенный сертификат");
         }
         TrustManagerFactory managers = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         managers.init(store);

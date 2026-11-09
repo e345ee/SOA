@@ -10,7 +10,6 @@
     <packaging>pom</packaging>
 
     <modules>
-           <module>observability</module>
            <module>second-service</module>
            <module>booking-service</module>
     </modules>

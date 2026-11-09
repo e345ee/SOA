@@ -1,5 +1,6 @@
 package se.ifmo.ru.service;
 
+import lombok.extern.slf4j.Slf4j;
 import se.ifmo.ru.utils.SearchValidation;
 import java.util.Set;
 import jakarta.data.Sort;
@@ -20,6 +21,7 @@ import se.ifmo.ru.repository.PersonRepository;
 
 import java.util.*;
 
+@Slf4j
 @ApplicationScoped
 public class PersonService {
     @Inject
@@ -30,8 +32,9 @@ public class PersonService {
     private TicketStatisticsService ticketStatisticsService;
 
     public PersonResponseDto findById(Long personId) {
+        log.debug("Поиск человека: personId={}", personId);
         Person person = personRepository.findById(personId).orElseThrow(
-                () -> new ResourceNotFoundException("person with id " + personId + " not found"));
+                () -> new ResourceNotFoundException("Человек с id " + personId + " не найден"));
         return personMapper.toPersonResponseDto(person);
     }
     @Transactional
@@ -42,29 +45,37 @@ public class PersonService {
 
     @Transactional
     public Person savePersonEntity(PersonCreateDto personCreateDto) {
+        log.info("Создание человека");
         Person person = personMapper.toPerson(personCreateDto);
-        return personRepository.insert(person);
+        Person saved = personRepository.insert(person);
+        log.info("Запрос на создание человека выполнен: personId={}", saved.getId());
+        return saved;
     }
     @Transactional
     public void deletePersonById(Long personId){
+        log.info("Удаление человека: personId={}", personId);
         if (personRepository.findById(personId).isPresent()) {
             long count = ticketStatisticsService.countByPerson(personId);
-            if (count > 0) throw new ResourceConflictException("Person with id " + personId + " is used by "+ count + " ticket(s)");
+            if (count > 0) throw new ResourceConflictException("Человек с id " + personId + " используется в билетах; количество: " + count);
             personRepository.deleteById(personId);
+            log.info("Запрос на удаление человека выполнен: personId={}", personId);
         }else{
-            throw new ResourceNotFoundException("person with id " + personId + " not found");
+            throw new ResourceNotFoundException("Человек с id " + personId + " не найден");
         }
     }
     @Transactional
     public PersonResponseDto updatePerson(Long personId, PersonCreateDto personCreateDto) {
+        log.info("Обновление человека: personId={}", personId);
         Person person = personRepository.findById(personId).orElseThrow(
-                () -> new ResourceNotFoundException("person with id " + personId + " not found"));
+                () -> new ResourceNotFoundException("Человек с id " + personId + " не найден"));
         personMapper.updatePersonFromDto(personCreateDto, person);
         Person newPerson = personRepository.update(person);
+        log.info("Запрос на обновление человека выполнен: personId={}", personId);
         return personMapper.toPersonResponseDto(newPerson);
     }
 
     public ResponsePaginationDto<PersonResponseDto> search(SearchDto<PersonSearchFilterDto> requestDto) {
+        log.debug("Поиск людей: страница={}, размер={}", requestDto.getPage(), requestDto.getSize());
         SearchValidation.validateSorts(requestDto.getSort(), Set.of("id", "birthday", "weight", "location.x", "location.y", "location.name"));
         List<Sort<Person>> sorts = new ArrayList<>();
         if (requestDto.getSort() != null) {
@@ -93,6 +104,6 @@ public class PersonService {
 
     public Person getPersonById(Long personId) {
         return personRepository.findById(personId).orElseThrow(
-                () -> new ResourceNotFoundException("person with id " + personId + " not found"));
+                () -> new ResourceNotFoundException("Человек с id " + personId + " не найден"));
     }
 }

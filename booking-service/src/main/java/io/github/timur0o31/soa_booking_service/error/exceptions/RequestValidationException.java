@@ -1,7 +1,9 @@
 package io.github.timur0o31.soa_booking_service.error.exceptions;
 
-public class RequestValidationException extends RuntimeException {
+import jakarta.ws.rs.core.Response;
+
+public class RequestValidationException extends ApplicationException {
     public RequestValidationException(String field, String message) {
-        super(field + ": " + message);
+        super(Response.Status.BAD_REQUEST, field + ": " + message, null);
     }
 }

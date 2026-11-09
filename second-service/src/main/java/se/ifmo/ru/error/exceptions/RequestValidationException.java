@@ -1,7 +1,9 @@
 package se.ifmo.ru.error.exceptions;
 
-public class RequestValidationException extends RuntimeException {
+import jakarta.ws.rs.core.Response;
+
+public class RequestValidationException extends ApplicationException {
     public RequestValidationException(String field, String message) {
-        super(field + ": " + message);
+        super(Response.Status.BAD_REQUEST, field + ": " + message, null);
     }
 }

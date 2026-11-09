@@ -7,7 +7,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.DecimalMax;
-import jakarta.validation.constraints.Pattern;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import se.ifmo.ru.dto.request.*;
@@ -16,10 +15,8 @@ import se.ifmo.ru.dto.request.*;
 import se.ifmo.ru.dto.response.TicketResponseDto;
 import se.ifmo.ru.service.TicketService;
 import se.ifmo.ru.service.EventCancellationService;
-import se.ifmo.ru.service.DiscountSaleService;
 
 import java.net.URI;
-import java.util.UUID;
 
 @Path("/tickets")
 @Produces(MediaType.APPLICATION_JSON)
@@ -30,9 +27,6 @@ public class TicketResource {
 
     @Inject
     private EventCancellationService eventCancellationService;
-
-    @Inject
-    private DiscountSaleService discountSaleService;
 
     @POST
     @Path("/cancel-event/{event-id}")
@@ -46,11 +40,9 @@ public class TicketResource {
     public Response sellWithDiscount(
             @PathParam("ticket-id") @Min(1) Long ticketId,
             @PathParam("person-id") @Min(1) Long personId,
-            @PathParam("discount") @DecimalMin("0") @DecimalMax("100") Float discount,
-            @HeaderParam("Idempotency-Key") @NotNull
-            @Pattern(regexp = "[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}") String key
+            @PathParam("discount") @DecimalMin("0") @DecimalMax("100") Float discount
     ) {
-        String response = discountSaleService.sell(UUID.fromString(key), ticketId, personId, discount);
+        TicketResponseDto response = ticketService.sellWithDiscount(ticketId, personId, discount);
         return Response.status(Response.Status.CREATED).entity(response).build();
     }
 

@@ -98,23 +98,21 @@ async function check(browser) {
  await rejected(form,form.locator('[name="discount"]'),['01.7','101','-1','1.99999999']);
  await fillSale();
  await form.locator('button').click();
- await page.getByText(/Результат продажи пока неизвестен/).waitFor();
+ await page.getByText(/Результат продажи неизвестен/).waitFor();
+ assert.equal(await form.locator('button').isDisabled(), true);
  await page.reload();
  await fillSale();
  await form.locator('button').click();
  await page.locator('#booking-row time').waitFor();
- await form.locator('button').click();
- await page.waitForFunction(()=>!document.querySelector('#discount-form button').disabled);
  const sales=calls.filter(x=>x.path.includes('/sell/discount'));
- assert.equal(sales.length,3);
- assert.ok(sales[0].key);
- assert.equal(sales[0].key,sales[1].key);
- assert.notEqual(sales[1].key,sales[2].key);
+ assert.equal(sales.length,2);
+ assert.equal(sales[0].key,undefined);
+ assert.equal(sales[1].key,undefined);
  await page.close();
 }
 
 (async()=>{
  const browser=await chromium.launch();
- try {await check(browser); console.log('Проверены часовые пояса, формы, отправленные запросы и повтор продажи.');}
+ try {await check(browser); console.log('Проверены часовые пояса, формы, отправленные запросы и поведение при потере ответа.');}
  finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

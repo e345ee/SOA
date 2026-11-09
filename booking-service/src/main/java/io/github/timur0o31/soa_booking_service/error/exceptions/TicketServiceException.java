@@ -1,11 +1,13 @@
 package io.github.timur0o31.soa_booking_service.error.exceptions;
 
-public class TicketServiceException extends RuntimeException {
+import jakarta.ws.rs.core.Response;
+
+public class TicketServiceException extends ApplicationException {
     public TicketServiceException(String message) {
-        super(message);
+        super(Response.Status.BAD_GATEWAY, message, null);
     }
 
     public TicketServiceException(String message, Throwable cause) {
-        super(message, cause);
+        super(Response.Status.BAD_GATEWAY, message, cause);
     }
 }

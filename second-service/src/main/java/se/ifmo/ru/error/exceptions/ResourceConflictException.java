@@ -1,7 +1,9 @@
 package se.ifmo.ru.error.exceptions;
 
-public class ResourceConflictException extends RuntimeException {
+import jakarta.ws.rs.core.Response;
+
+public class ResourceConflictException extends ApplicationException {
     public ResourceConflictException(String message) {
-        super(message);
+        super(Response.Status.CONFLICT, message, null);
     }
 }
