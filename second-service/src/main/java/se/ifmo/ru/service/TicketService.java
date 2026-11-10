@@ -96,10 +96,6 @@ public class TicketService {
         return personService.savePersonEntity(personDto.toCreate());
     }
 
-    public Long countByPerson(PersonInputDto person) {
-        return ticketStatisticsService.countByPerson(person);
-    }
-
     public Double getSum(){
         return ticketStatisticsService.getSum();
     }
