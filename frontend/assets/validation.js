@@ -51,6 +51,9 @@ function preservesDecimal(text, number, format) {
 
 export function readValue(raw, schema, required, resolve) {
     schema = resolve(schema);
+    if (schema.maxLength !== undefined && raw.length > schema.maxLength) {
+        throw new Error(`Не больше ${schema.maxLength} символов.`);
+    }
     const value = raw.trim();
     if (schema.uiAllowNull && value === '__null__') return null;
     if (!value) {

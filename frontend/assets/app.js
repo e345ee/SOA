@@ -78,7 +78,7 @@ function inputHTML(def, value = '', placeholder = '') {
         const date = new Date(value);
         if (Number.isFinite(date.getTime())) value = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, -1);
     }
-    return `<input ${attributes} type="${inputType(schema)}" ${schema.format === 'date' ? `min="0001-01-01" max="${schema.uiNoFuture ? today() : '9999-12-31'}"` : schema.format === 'date-time' ? 'step="0.001" min="0001-01-01T00:00" max="9999-12-31T23:59"' : ''} ${['integer', 'number'].includes(schema.type) ? `inputmode="${schema.type === 'integer' ? 'numeric' : 'decimal'}"` : ''} value="${escape(value)}" placeholder="${escape(placeholder)}" autocomplete="off">`;
+    return `<input ${attributes} type="${inputType(schema)}" ${schema.format === 'date' ? `min="0001-01-01" max="${schema.uiNoFuture ? today() : '9999-12-31'}"` : schema.format === 'date-time' ? 'step="0.001" min="0001-01-01T00:00" max="9999-12-31T23:59"' : ''} ${['integer', 'number'].includes(schema.type) ? `inputmode="${schema.type === 'integer' ? 'numeric' : 'decimal'}"` : ''} ${schema.type === 'string' && schema.maxLength !== undefined ? `maxlength="${schema.maxLength}"` : ''} value="${escape(value)}" placeholder="${escape(placeholder)}" autocomplete="off">`;
 }
 
 function fieldHTML(def, value = '') {
