@@ -2,7 +2,9 @@ package se.ifmo.ru.repository;
 
 import jakarta.data.Sort;
 import jakarta.data.page.PageRequest;
+import jakarta.data.repository.By;
 import jakarta.data.repository.CrudRepository;
+import jakarta.data.repository.Delete;
 import jakarta.data.repository.Repository;
 import jakarta.persistence.criteria.*;
 import org.hibernate.StatelessSession;
@@ -15,6 +17,10 @@ import java.util.List;
 
 @Repository(provider = "Hibernate", dataStore = "default")
 public interface    TicketRepository extends CrudRepository<Ticket, Long> {
+
+     @Delete
+     int deleteTicketById(@By("id") Long ticketId);
+
     StatelessSession session();
 
     default List<Ticket> search(TicketSearchFilterDto filter, PageRequest pageRequest, List<Sort<Ticket>> sorts) {
