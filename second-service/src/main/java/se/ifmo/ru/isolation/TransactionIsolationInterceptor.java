@@ -22,10 +22,6 @@ public class TransactionIsolationInterceptor {
 
     @AroundInvoke
     public Object setIsolation(InvocationContext context) throws Exception {
-        Transactional transactional = context.getMethod().getAnnotation(Transactional.class);
-        if (transactional == null || transactional.value() != Transactional.TxType.REQUIRES_NEW) {
-            throw new IllegalStateException("@TransactionIsolation требует @Transactional(REQUIRES_NEW)");
-        }
         TransactionIsolation annotation = context.getMethod().getAnnotation(TransactionIsolation.class);
         IsolationType isolationType = annotation.value();
         StatelessSession session = ticketRepository.session();
