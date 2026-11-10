@@ -4,7 +4,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import se.ifmo.ru.repository.TicketRepository;
-import se.ifmo.ru.dto.request.PersonInputDto;
 
 
 @Slf4j
@@ -28,11 +27,6 @@ public class TicketStatisticsService {
         if (value==null) return 0.0;
         return value;
     }
-    public Long countByPerson(PersonInputDto person) {
-        log.info("Подсчёт билетов по данным человека");
-        return ticketRepository.countByPerson(person);
-    }
-
     public Long countByPerson(Long personId) {
         log.info("Подсчёт билетов: personId={}", personId);
         return ticketRepository.countByPerson(personId);
