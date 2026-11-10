@@ -102,13 +102,12 @@ public interface    TicketRepository extends CrudRepository<Ticket, Long> {
     }
 
     default Long countByPerson(Long personId) {
-        return session()
-                .createNativeQuery("""
-                    SELECT COUNT(*)
-                    FROM tickets
-                    WHERE person_id = :personId
-                """, Long.class)
-                .setParameter("personId", personId)
-                .getSingleResult();
+        StatelessSession session = session();
+        CriteriaBuilder cb = session.getCriteriaBuilder();
+        CriteriaQuery<Long> query = cb.createQuery(Long.class);
+        Root<Ticket> ticket = query.from(Ticket.class);
+        query.select(cb.count(ticket))
+                .where(cb.equal(ticket.get("person").get("id"), personId));
+        return session.createQuery(query).getSingleResult();
     }
 }

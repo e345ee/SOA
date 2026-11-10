@@ -104,4 +104,10 @@ public class TicketResource {
         return Response.ok(ticketService.countByPerson(dto)).build();
     }
 
+    @GET
+    @Path("/count-by-person/{person-id}")
+    public Response getCountByPersonId(@PathParam("person-id") @Min(1) Long personId) {
+        return Response.ok(ticketService.countByPerson(personId)).build();
+    }
+
 }

@@ -617,16 +617,19 @@ async function statistic(path, label) {
 }
 
 function countPersonForm() {
-    const defs = fields(schemas().Person);
-    showModal('Количество билетов по человеку', `<form id="count-form"><div class="form-grid">${defs.map(def => fieldHTML(def)).join('')}</div><div class="message" id="count-message"></div><div class="dialog-actions">${cancelButton()}<button type="submit" class="primary">Посчитать</button></div></form>`);
+    const def = {path: 'personId', label: 'Человек', required: true, schema: {type: 'integer', format: 'int64', minimum: 1}};
+    showModal('Количество билетов по человеку', `<form id="count-form"><p>Выберите человека, чтобы посчитать связанные с ним билеты.</p><div class="form-grid"><div class="wide" id="existing-person">${personPickerHTML(def)}</div></div><div class="message" id="count-message"></div><div class="dialog-actions">${cancelButton()}<button type="submit" class="primary">Посчитать</button></div></form>`);
     const form = $('#count-form');
-    bindForm(form, defs);
+    bindForm(form, [def]);
+    const picker = personPicker(form, def);
     attachCancel();
+    picker.load();
     form.onsubmit = async event => {
         event.preventDefault();
         try {
-            const payload = collect(form);
-            const result = await api('/tickets/count-by-person', {method: 'POST', body: payload});
+            const {personId} = collect(form);
+            picker.validate();
+            const result = await api('/tickets/count-by-person/' + encodeURIComponent(String(personId)));
             if (!['number', 'bigint'].includes(typeof result) || !/^\d+$/.test(String(result))) throw new Error('Сервер не вернул количество билетов.');
             message($('#count-message'), 'Количество билетов: ' + String(result), 'success');
         } catch (error) {
