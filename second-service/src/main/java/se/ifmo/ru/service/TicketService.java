@@ -100,6 +100,10 @@ public class TicketService {
         return ticketStatisticsService.countByPerson(person);
     }
 
+    public Long countByPerson(Long personId) {
+        return ticketStatisticsService.countByPerson(personId);
+    }
+
     public Double getSum(){
         return ticketStatisticsService.getSum();
     }
