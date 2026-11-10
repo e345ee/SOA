@@ -93,7 +93,11 @@ public class PersonService {
             sorts.add(Sort.asc("id"));
         PersonSearchFilterDto filter = requestDto.getFilter();
         Long total = personRepository.count(filter);
-        List<Person> people = requestDto.getPage() > total / requestDto.getSize() ? List.of() : personRepository.search(filter, PageRequest.ofPage(requestDto.getPage()+1).size(Math.toIntExact(requestDto.getSize())), sorts);
+        long totalPages = total / requestDto.getSize();
+        if (total % requestDto.getSize() != 0) {
+            totalPages++;
+        }
+        List<Person> people = requestDto.getPage() >= totalPages? List.of() : personRepository.search(filter, PageRequest.ofPage(requestDto.getPage()+1).size(Math.toIntExact(requestDto.getSize())), sorts);
         List<PersonResponseDto> content = people.stream().map(person -> personMapper.toPersonResponseDto(person)).toList();
         return ResponsePaginationDto.ans(content,requestDto.getPage(),requestDto.getSize(),total);
     }
