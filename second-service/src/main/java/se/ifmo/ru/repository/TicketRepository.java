@@ -6,12 +6,12 @@ import jakarta.data.repository.CrudRepository;
 import jakarta.data.repository.Repository;
 import jakarta.persistence.criteria.*;
 import org.hibernate.StatelessSession;
-import se.ifmo.ru.model.Ticket;
-import se.ifmo.ru.dto.request.TicketSearchFilterDto;
 import se.ifmo.ru.dto.request.PersonInputDto;
-import se.ifmo.ru.utils.TicketCriteriaSearch;
+import se.ifmo.ru.dto.request.TicketSearchFilterDto;
+import se.ifmo.ru.model.Ticket;
+import se.ifmo.ru.repository.criteria.CriteriaPredicates;
+import se.ifmo.ru.repository.criteria.TicketCriteriaSearch;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -87,18 +87,14 @@ public interface    TicketRepository extends CrudRepository<Ticket, Long> {
         if (person.id() != null) {
             conditions.add(cb.equal(personPath.get("id"), person.id()));
         }
-        conditions.add(equalOrNull(cb, personPath.get("birthday"), person.birthday()));
-        conditions.add(equalOrNull(cb, personPath.get("weight"), person.weight()));
-        conditions.add(equalOrNull(cb, location.get("x"), person.location().x()));
-        conditions.add(equalOrNull(cb, location.get("y"), person.location().y()));
-        conditions.add(equalOrNull(cb, location.get("name"), person.location().name()));
+        conditions.add(CriteriaPredicates.equalOrNull(cb, personPath.get("birthday"), person.birthday()));
+        conditions.add(CriteriaPredicates.equalOrNull(cb, personPath.get("weight"), person.weight()));
+        conditions.add(CriteriaPredicates.equalOrNull(cb, location.get("x"), person.location().x()));
+        conditions.add(CriteriaPredicates.equalOrNull(cb, location.get("y"), person.location().y()));
+        conditions.add(CriteriaPredicates.equalOrNull(cb, location.get("name"), person.location().name()));
 
         query.select(cb.count(ticket)).where(conditions.toArray(Predicate[]::new));
         return session.createQuery(query).getSingleResult();
-    }
-
-    private static Predicate equalOrNull(CriteriaBuilder cb, Path<?> path, Object value) {
-        return value == null ? cb.isNull(path) : cb.equal(path, value);
     }
 
     default Long countByPerson(Long personId) {

@@ -1,4 +1,4 @@
-package se.ifmo.ru.utils;
+package se.ifmo.ru.repository.criteria;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
@@ -11,8 +11,8 @@ import se.ifmo.ru.model.Location_;
 import java.util.ArrayList;
 import java.util.List;
 
-import static se.ifmo.ru.utils.CriteriaPredicates.add;
-import static se.ifmo.ru.utils.CriteriaPredicates.contains;
+import static se.ifmo.ru.repository.criteria.CriteriaPredicates.add;
+import static se.ifmo.ru.repository.criteria.CriteriaPredicates.contains;
 
 public final class PersonCriteriaSearch {
     private PersonCriteriaSearch() {}

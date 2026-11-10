@@ -8,7 +8,7 @@ import jakarta.persistence.criteria.*;
 import org.hibernate.StatelessSession;
 import se.ifmo.ru.model.Person;
 import se.ifmo.ru.dto.request.PersonSearchFilterDto;
-import se.ifmo.ru.utils.PersonCriteriaSearch;
+import se.ifmo.ru.repository.criteria.PersonCriteriaSearch;
 
 import java.util.ArrayList;
 import java.util.List;
