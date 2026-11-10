@@ -2,11 +2,12 @@ package se.ifmo.ru.repository;
 
 import jakarta.data.Sort;
 import jakarta.data.page.PageRequest;
+import jakarta.data.repository.By;
 import jakarta.data.repository.CrudRepository;
+import jakarta.data.repository.Delete;
 import jakarta.data.repository.Repository;
 import jakarta.persistence.criteria.*;
 import org.hibernate.StatelessSession;
-import se.ifmo.ru.dto.request.PersonInputDto;
 import se.ifmo.ru.dto.request.TicketSearchFilterDto;
 import se.ifmo.ru.model.Ticket;
 import se.ifmo.ru.repository.criteria.CriteriaPredicates;
@@ -17,6 +18,10 @@ import java.util.List;
 
 @Repository(provider = "Hibernate", dataStore = "default")
 public interface    TicketRepository extends CrudRepository<Ticket, Long> {
+
+     @Delete
+     int deleteTicketById(@By("id") Long ticketId);
+
     StatelessSession session();
 
     default List<Ticket> search(TicketSearchFilterDto filter, PageRequest pageRequest, List<Sort<Ticket>> sorts) {
@@ -75,27 +80,6 @@ public interface    TicketRepository extends CrudRepository<Ticket, Long> {
                 .executeUpdate();
     }
 
-    default Long countByPerson(PersonInputDto person) {
-        StatelessSession session = session();
-        CriteriaBuilder cb = session.getCriteriaBuilder();
-        CriteriaQuery<Long> query = cb.createQuery(Long.class);
-        Root<Ticket> ticket = query.from(Ticket.class);
-        Path<?> personPath = ticket.get("person");
-        Path<?> location = personPath.get("location");
-        List<Predicate> conditions = new ArrayList<>();
-
-        if (person.id() != null) {
-            conditions.add(cb.equal(personPath.get("id"), person.id()));
-        }
-        conditions.add(CriteriaPredicates.equalOrNull(cb, personPath.get("birthday"), person.birthday()));
-        conditions.add(CriteriaPredicates.equalOrNull(cb, personPath.get("weight"), person.weight()));
-        conditions.add(CriteriaPredicates.equalOrNull(cb, location.get("x"), person.location().x()));
-        conditions.add(CriteriaPredicates.equalOrNull(cb, location.get("y"), person.location().y()));
-        conditions.add(CriteriaPredicates.equalOrNull(cb, location.get("name"), person.location().name()));
-
-        query.select(cb.count(ticket)).where(conditions.toArray(Predicate[]::new));
-        return session.createQuery(query).getSingleResult();
-    }
 
     default Long countByPerson(Long personId) {
         StatelessSession session = session();

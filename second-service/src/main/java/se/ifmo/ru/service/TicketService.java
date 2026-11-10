@@ -56,7 +56,7 @@ public class TicketService {
     public TicketResponseDto sellWithDiscount(long ticketId, long personId, float discount) {
         log.info("Продажа билета со скидкой: ticketId={}, personId={}, скидка={}", ticketId, personId, discount);
         TicketResponseDto source = findById(ticketId);
-        float price = (float) Math.max(1.0, source.price() * (1.0 - discount / 100.0));
+        float price = (float) Math.max(1, source.price() * (1 - discount / 100.0));
         TicketCreateDto sale = new TicketCreateDto(source.name(), source.coordinates(), price,
                 source.type(), personId, null, source.eventId());
         return saveTicket(sale);
@@ -65,12 +65,11 @@ public class TicketService {
     @Transactional
     public void deleteTicketById(Long ticketId){
         log.info("Удаление билета: ticketId={}", ticketId);
-        if (ticketRepository.findById(ticketId).isPresent()) {
-            ticketRepository.deleteById(ticketId);
-            log.info("Запрос на удаление билета выполнен: ticketId={}", ticketId);
-        }else{
+        int deleted = ticketRepository.deleteTicketById(ticketId);
+        if (deleted == 0) {
             throw new ResourceNotFoundException("Билет с id " + ticketId + " не найден");
         }
+        log.info("Запрос на удаление билета выполнен: ticketId={}", ticketId);
     }
 
     @Transactional
@@ -96,14 +95,9 @@ public class TicketService {
         return personService.savePersonEntity(personDto.toCreate());
     }
 
-    public Long countByPerson(PersonInputDto person) {
-        return ticketStatisticsService.countByPerson(person);
-    }
-
     public Long countByPerson(Long personId) {
         return ticketStatisticsService.countByPerson(personId);
     }
-
     public Double getSum(){
         return ticketStatisticsService.getSum();
     }
