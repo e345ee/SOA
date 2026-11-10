@@ -108,6 +108,7 @@ components:
         name:
           type: string
           minLength: 1
+          maxLength: 255
         coordinates:
           $ref: '#/components/schemas/Coordinates'
         creationDate:
@@ -143,6 +144,7 @@ components:
         name:
           type: string
           minLength: 1
+          maxLength: 255
         coordinates:
           $ref: '#/components/schemas/Coordinates'
         creationDate:
@@ -1022,6 +1024,35 @@ paths:
                 title: Bad Request
                 status: 400
                 detail: некорректные данные
+
+  /tickets/count-by-person/{person-id}:
+    get:
+      tags:
+        - Ticket statistics
+      description: Вернуть количество билетов выбранного человека
+      parameters:
+        - name: person-id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Количество билетов
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+                minimum: 0
+        '400':
+          description: Некорректный идентификатор человека
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /tickets/discount/{ticket-id}/{person-id}/{discount}:
     post:

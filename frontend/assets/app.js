@@ -78,7 +78,7 @@ function inputHTML(def, value = '', placeholder = '') {
         const date = new Date(value);
         if (Number.isFinite(date.getTime())) value = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, -1);
     }
-    return `<input ${attributes} type="${inputType(schema)}" ${schema.format === 'date' ? `min="0001-01-01" max="${schema.uiNoFuture ? today() : '9999-12-31'}"` : schema.format === 'date-time' ? 'step="0.001" min="0001-01-01T00:00" max="9999-12-31T23:59"' : ''} ${['integer', 'number'].includes(schema.type) ? `inputmode="${schema.type === 'integer' ? 'numeric' : 'decimal'}"` : ''} value="${escape(value)}" placeholder="${escape(placeholder)}" autocomplete="off">`;
+    return `<input ${attributes} type="${inputType(schema)}" ${schema.format === 'date' ? `min="0001-01-01" max="${schema.uiNoFuture ? today() : '9999-12-31'}"` : schema.format === 'date-time' ? 'step="0.001" min="0001-01-01T00:00" max="9999-12-31T23:59"' : ''} ${['integer', 'number'].includes(schema.type) ? `inputmode="${schema.type === 'integer' ? 'numeric' : 'decimal'}"` : ''} ${schema.type === 'string' && schema.maxLength !== undefined ? `maxlength="${schema.maxLength}"` : ''} value="${escape(value)}" placeholder="${escape(placeholder)}" autocomplete="off">`;
 }
 
 function fieldHTML(def, value = '') {
@@ -617,16 +617,19 @@ async function statistic(path, label) {
 }
 
 function countPersonForm() {
-    const defs = fields(schemas().Person);
-    showModal('Количество билетов по человеку', `<form id="count-form"><div class="form-grid">${defs.map(def => fieldHTML(def)).join('')}</div><div class="message" id="count-message"></div><div class="dialog-actions">${cancelButton()}<button type="submit" class="primary">Посчитать</button></div></form>`);
+    const def = {path: 'personId', label: 'Человек', required: true, schema: {type: 'integer', format: 'int64', minimum: 1}};
+    showModal('Количество билетов по человеку', `<form id="count-form"><p>Выберите человека, чтобы посчитать связанные с ним билеты.</p><div class="form-grid"><div class="wide" id="existing-person">${personPickerHTML(def)}</div></div><div class="message" id="count-message"></div><div class="dialog-actions">${cancelButton()}<button type="submit" class="primary">Посчитать</button></div></form>`);
     const form = $('#count-form');
-    bindForm(form, defs);
+    bindForm(form, [def]);
+    const picker = personPicker(form, def);
     attachCancel();
+    picker.load();
     form.onsubmit = async event => {
         event.preventDefault();
         try {
-            const payload = collect(form);
-            const result = await api('/tickets/count-by-person', {method: 'POST', body: payload});
+            const {personId} = collect(form);
+            picker.validate();
+            const result = await api('/tickets/count-by-person/' + encodeURIComponent(String(personId)));
             if (!['number', 'bigint'].includes(typeof result) || !/^\d+$/.test(String(result))) throw new Error('Сервер не вернул количество билетов.');
             message($('#count-message'), 'Количество билетов: ' + String(result), 'success');
         } catch (error) {
