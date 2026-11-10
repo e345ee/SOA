@@ -98,12 +98,6 @@ public class TicketResource {
         return Response.ok(response).build();
     }
 
-    @POST
-    @Path("/count-by-person")
-    public Response getCountByPerson(@NotNull @Valid PersonInputDto dto){
-        return Response.ok(ticketService.countByPerson(dto)).build();
-    }
-
     @GET
     @Path("/count-by-person/{person-id}")
     public Response getCountByPersonId(@PathParam("person-id") @Min(1) Long personId) {

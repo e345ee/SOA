@@ -994,37 +994,6 @@ paths:
                 format: double
                 minimum: 0
 
-  /tickets/count-by-person:
-    post:
-      tags:
-        - Ticket statistics
-      description: Вернуть количество билетов, поле person которых равно заданному
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Person'
-      responses:
-        '200':
-          description: Количество билетов
-          content:
-            application/json:
-              schema:
-                type: integer
-                format: int64
-                minimum: 0
-        '400':
-          description: Некорректные данные объекта person
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                title: Bad Request
-                status: 400
-                detail: некорректные данные
-
   /tickets/count-by-person/{person-id}:
     get:
       tags:
