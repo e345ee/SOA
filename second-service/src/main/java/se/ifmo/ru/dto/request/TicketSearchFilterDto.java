@@ -15,8 +15,12 @@ import java.time.OffsetDateTime;
 public class TicketSearchFilterDto {
     @Positive private Long id;
     @Size(min = 1) private String nameContains;
-    @DecimalMin(value = "-495", inclusive = false) private BigDecimal coordinatesXFrom;
-    @DecimalMin(value = "-495", inclusive = false) private BigDecimal coordinatesXTo;
+    @DecimalMin(value = "-495", inclusive = false)
+    @Digits(integer = 309, fraction = 3, message = "Допустимо не более 3 знаков после точки")
+    private BigDecimal coordinatesXFrom;
+    @DecimalMin(value = "-495", inclusive = false)
+    @Digits(integer = 309, fraction = 3, message = "Допустимо не более 3 знаков после точки")
+    private BigDecimal coordinatesXTo;
     @Min(-262) private Integer coordinatesYFrom;
     @Min(-262) private Integer coordinatesYTo;
     private OffsetDateTime creationDateFrom;

@@ -32,6 +32,7 @@ components:
           format: double
           minimum: -495
           exclusiveMinimum: true
+          multipleOf: 0.001
         y:
           type: integer
           format: int32
@@ -257,9 +258,13 @@ components:
           format: double
           minimum: -495
           exclusiveMinimum: true
+          multipleOf: 0.001
         coordinatesXTo:
           type: number
           format: double
+          minimum: -495
+          exclusiveMinimum: true
+          multipleOf: 0.001
         coordinatesYFrom:
           type: integer
           format: int32
@@ -467,6 +472,7 @@ components:
             format: double
             minimum: -495
             exclusiveMinimum: true
+            multipleOf: 0.001
           coordinatesY:
             type: integer
             format: int32

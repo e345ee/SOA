@@ -22,7 +22,21 @@ function dateTimeValid(value) {
 export function numericLimits(schema) {
     if (schema.type === 'integer') return {maxLength: schema.format === 'int32' ? 11 : 20, maxFractionDigits: 0};
     if (schema.type !== 'number') return null;
-    return schema.format === 'float' ? {maxLength: 16, maxFractionDigits: 9} : {maxLength: 24, maxFractionDigits: 15};
+    const maxFractionDigits = schema.format === 'float' ? 9 : 15;
+    const multipleOf = schema.multipleOf;
+    if (multipleOf > 0 && Number.isFinite(multipleOf)) {
+        const [coefficient, exponentText] = String(multipleOf).toLowerCase().split('e');
+        const exponent = Number(exponentText ?? 0);
+        const fractionDigits = Math.max(0, (coefficient.split('.')[1]?.length ?? 0) - exponent);
+        const scaled = multipleOf * 10 ** fractionDigits;
+        if (Number.isInteger(scaled) && /^10*$/.test(String(scaled))) {
+            return {
+                maxLength: schema.format === 'float' ? 16 : 24,
+                maxFractionDigits: Math.min(maxFractionDigits, fractionDigits)
+            };
+        }
+    }
+    return {maxLength: schema.format === 'float' ? 16 : 24, maxFractionDigits};
 }
 
 function validateNumericText(value, schema) {
