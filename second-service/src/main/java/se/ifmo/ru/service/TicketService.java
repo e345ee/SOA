@@ -36,6 +36,7 @@ public class TicketService {
     @Inject
     private TicketMapper ticketMapper;
 
+    @Transactional(Transactional.TxType.SUPPORTS)
     public TicketResponseDto findById(Long ticketId) {
         log.info("Поиск билета: ticketId={}", ticketId);
         Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(
@@ -97,13 +98,16 @@ public class TicketService {
         return personService.savePersonEntity(personDto.toCreate());
     }
 
+    @Transactional(Transactional.TxType.SUPPORTS)
     public Long countByPerson(Long personId) {
         return ticketStatisticsService.countByPerson(personId);
     }
+    @Transactional(Transactional.TxType.SUPPORTS)
     public Double getSum(){
         return ticketStatisticsService.getSum();
     }
 
+    @Transactional(Transactional.TxType.SUPPORTS)
     public Double getAvg(){
         return ticketStatisticsService.getAvg();
     }
