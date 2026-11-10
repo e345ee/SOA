@@ -1,6 +1,7 @@
 package se.ifmo.ru.isolation;
 
 import jakarta.annotation.Priority;
+import jakarta.annotation.Resource;
 import jakarta.inject.Inject;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
@@ -20,7 +21,7 @@ public class TransactionIsolationInterceptor {
 
     @Inject
     TicketRepository ticketRepository;
-    @Inject
+    @Resource
     TransactionSynchronizationRegistry transactionRegistry;
 
     @AroundInvoke
