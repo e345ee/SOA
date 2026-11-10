@@ -49,6 +49,11 @@ function preservesDecimal(text, number, format) {
     return false;
 }
 
+export function numericTextPreservesPrecision(text, schema) {
+    const number = Number(text);
+    return Number.isFinite(number) && preservesDecimal(text, number, schema.format);
+}
+
 export function readValue(raw, schema, required, resolve) {
     schema = resolve(schema);
     if (schema.maxLength !== undefined && raw.length > schema.maxLength) {
@@ -71,7 +76,7 @@ export function readValue(raw, schema, required, resolve) {
     } else if (schema.type === 'number') {
         parsed = Number(value);
         if (!Number.isFinite(parsed)) throw new Error('Введите конечное число в допустимом диапазоне.');
-        if (!preservesDecimal(value, parsed, schema.format)) throw new Error('Число потеряет точность. Уменьшите количество цифр.');
+        if (!numericTextPreservesPrecision(value, schema)) throw new Error('Число потеряет точность. Уменьшите количество цифр.');
     }
     if (schema.enum && !schema.enum.includes(parsed)) throw new Error('Выберите значение из списка.');
     if (schema.minimum !== undefined && (schema.exclusiveMinimum ? parsed <= schema.minimum : parsed < schema.minimum)) throw new Error(`Значение должно быть ${schema.exclusiveMinimum ? 'больше' : 'не меньше'} ${schema.minimum}.`);
