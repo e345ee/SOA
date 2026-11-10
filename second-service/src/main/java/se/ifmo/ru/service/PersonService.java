@@ -75,7 +75,7 @@ public class PersonService {
     }
 
     public ResponsePaginationDto<PersonResponseDto> search(SearchDto<PersonSearchFilterDto> requestDto) {
-        log.debug("Поиск людей: страница={}, размер={}", requestDto.getPage(), requestDto.getSize());
+        log.info("Поиск людей: страница={}, размер={}", requestDto.getPage(), requestDto.getSize());
         SearchValidation.validateSorts(requestDto.getSort(), Set.of("id", "birthday", "weight", "location.x", "location.y", "location.name"));
         List<Sort<Person>> sorts = new ArrayList<>();
         if (requestDto.getSort() != null) {

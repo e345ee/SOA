@@ -111,7 +111,7 @@ public class TicketService {
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     @TransactionIsolation(IsolationType.REPEATABLE_READ)
     public ResponsePaginationDto<TicketResponseDto> search(SearchDto<TicketSearchFilterDto> dto) {
-        log.debug("Поиск билетов: страница={}, размер={}", dto.getPage(), dto.getSize());
+        log.info("Поиск билетов: страница={}, размер={}", dto.getPage(), dto.getSize());
         SearchValidation.validateSorts(dto.getSort(), Set.of("id", "name", "coordinates.x", "coordinates.y", "creationDate", "price", "type", "person.birthday", "person.weight", "person.location.x", "person.location.y", "person.location.name", "eventId"));
         List<Sort<Ticket>> sorts = new ArrayList<>();
         if (dto.getSort() != null) {
