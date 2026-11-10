@@ -5,7 +5,8 @@ import jakarta.inject.Inject;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
-import jakarta.transaction.Transactional;
+import jakarta.transaction.Status;
+import jakarta.transaction.TransactionSynchronizationRegistry;
 import org.hibernate.StatelessSession;
 import se.ifmo.ru.enums.IsolationType;
 import se.ifmo.ru.repository.TicketRepository;
@@ -19,14 +20,21 @@ public class TransactionIsolationInterceptor {
 
     @Inject
     TicketRepository ticketRepository;
+    @Inject
+    TransactionSynchronizationRegistry transactionRegistry;
 
     @AroundInvoke
     public Object setIsolation(InvocationContext context) throws Exception {
-        Transactional transactional = context.getMethod().getAnnotation(Transactional.class);
-        if (transactional == null || transactional.value() != Transactional.TxType.REQUIRES_NEW) {
-            throw new IllegalStateException("@TransactionIsolation требует @Transactional(REQUIRES_NEW)");
+        if (transactionRegistry.getTransactionStatus() != Status.STATUS_ACTIVE) {
+            throw new IllegalStateException("@TransactionIsolation требует активную транзакцию");
         }
         TransactionIsolation annotation = context.getMethod().getAnnotation(TransactionIsolation.class);
+        if (annotation == null) {
+            annotation = context.getTarget().getClass().getAnnotation(TransactionIsolation.class);
+        }
+        if (annotation == null) {
+            throw new IllegalStateException("Для перехваченного метода не задан уровень изоляции");
+        }
         IsolationType isolationType = annotation.value();
         StatelessSession session = ticketRepository.session();
         session.joinTransaction();

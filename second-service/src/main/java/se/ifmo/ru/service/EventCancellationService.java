@@ -12,7 +12,7 @@ import se.ifmo.ru.repository.TicketRepository;
 public class EventCancellationService {
     @Inject
     private TicketRepository ticketRepository;
-    @Transactional
+    @Transactional(Transactional.TxType.REQUIRED)
     public void cancelEvent(long eventId) {
         log.info("Начало удаления билетов по eventId={}", eventId);
         int deleted = ticketRepository.deleteByEventId(eventId);

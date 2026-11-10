@@ -37,13 +37,13 @@ public class PersonService {
                 () -> new ResourceNotFoundException("Человек с id " + personId + " не найден"));
         return personMapper.toPersonResponseDto(person);
     }
-    @Transactional
+    @Transactional(Transactional.TxType.REQUIRED)
     public PersonResponseDto savePerson(PersonCreateDto personCreateDto) {
         Person person = savePersonEntity(personCreateDto);
         return personMapper.toPersonResponseDto(person);
     }
 
-    @Transactional
+    @Transactional(Transactional.TxType.REQUIRED)
     public Person savePersonEntity(PersonCreateDto personCreateDto) {
         log.info("Создание человека");
         Person person = personMapper.toPerson(personCreateDto);
@@ -51,7 +51,7 @@ public class PersonService {
         log.info("Запрос на создание человека выполнен: personId={}", saved.getId());
         return saved;
     }
-    @Transactional
+    @Transactional(Transactional.TxType.REQUIRED)
     public void deletePersonById(Long personId){
         log.info("Удаление человека: personId={}", personId);
         if (personRepository.findById(personId).isPresent()) {
@@ -63,7 +63,7 @@ public class PersonService {
             throw new ResourceNotFoundException("Человек с id " + personId + " не найден");
         }
     }
-    @Transactional
+    @Transactional(Transactional.TxType.REQUIRED)
     public PersonResponseDto updatePerson(Long personId, PersonCreateDto personCreateDto) {
         log.info("Обновление человека: personId={}", personId);
         Person person = personRepository.findById(personId).orElseThrow(
