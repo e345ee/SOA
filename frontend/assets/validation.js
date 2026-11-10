@@ -22,7 +22,21 @@ function dateTimeValid(value) {
 export function numericLimits(schema) {
     if (schema.type === 'integer') return {maxLength: schema.format === 'int32' ? 11 : 20, maxFractionDigits: 0};
     if (schema.type !== 'number') return null;
-    return schema.format === 'float' ? {maxLength: 16, maxFractionDigits: 9} : {maxLength: 24, maxFractionDigits: 15};
+    const maxFractionDigits = schema.format === 'float' ? 9 : 15;
+    const multipleOf = schema.multipleOf;
+    if (multipleOf > 0 && Number.isFinite(multipleOf)) {
+        const [coefficient, exponentText] = String(multipleOf).toLowerCase().split('e');
+        const exponent = Number(exponentText ?? 0);
+        const fractionDigits = Math.max(0, (coefficient.split('.')[1]?.length ?? 0) - exponent);
+        const scaled = multipleOf * 10 ** fractionDigits;
+        if (Number.isInteger(scaled) && /^10*$/.test(String(scaled))) {
+            return {
+                maxLength: schema.format === 'float' ? 16 : 24,
+                maxFractionDigits: Math.min(maxFractionDigits, fractionDigits)
+            };
+        }
+    }
+    return {maxLength: schema.format === 'float' ? 16 : 24, maxFractionDigits};
 }
 
 function validateNumericText(value, schema) {
@@ -49,6 +63,11 @@ function preservesDecimal(text, number, format) {
     return false;
 }
 
+export function numericTextPreservesPrecision(text, schema) {
+    const number = Number(text);
+    return Number.isFinite(number) && preservesDecimal(text, number, schema.format);
+}
+
 export function readValue(raw, schema, required, resolve) {
     schema = resolve(schema);
     if (schema.maxLength !== undefined && raw.length > schema.maxLength) {
@@ -71,7 +90,7 @@ export function readValue(raw, schema, required, resolve) {
     } else if (schema.type === 'number') {
         parsed = Number(value);
         if (!Number.isFinite(parsed)) throw new Error('Введите конечное число в допустимом диапазоне.');
-        if (!preservesDecimal(value, parsed, schema.format)) throw new Error('Число потеряет точность. Уменьшите количество цифр.');
+        if (!numericTextPreservesPrecision(value, schema)) throw new Error('Число потеряет точность. Уменьшите количество цифр.');
     }
     if (schema.enum && !schema.enum.includes(parsed)) throw new Error('Выберите значение из списка.');
     if (schema.minimum !== undefined && (schema.exclusiveMinimum ? parsed <= schema.minimum : parsed < schema.minimum)) throw new Error(`Значение должно быть ${schema.exclusiveMinimum ? 'больше' : 'не меньше'} ${schema.minimum}.`);

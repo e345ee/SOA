@@ -1,6 +1,6 @@
 import {labels} from './labels.js';
 import {stringify} from './json.js';
-import {today, numericLimits, readValue as validateValue} from './validation.js';
+import {today, numericLimits, numericTextPreservesPrecision, readValue as validateValue} from './validation.js';
 import {ApiError, api} from './api.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -78,7 +78,9 @@ function inputHTML(def, value = '', placeholder = '') {
         const date = new Date(value);
         if (Number.isFinite(date.getTime())) value = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, -1);
     }
-    return `<input ${attributes} type="${inputType(schema)}" ${schema.format === 'date' ? `min="0001-01-01" max="${schema.uiNoFuture ? today() : '9999-12-31'}"` : schema.format === 'date-time' ? 'step="0.001" min="0001-01-01T00:00" max="9999-12-31T23:59"' : ''} ${['integer', 'number'].includes(schema.type) ? `inputmode="${schema.type === 'integer' ? 'numeric' : 'decimal'}"` : ''} ${schema.type === 'string' && schema.maxLength !== undefined ? `maxlength="${schema.maxLength}"` : ''} value="${escape(value)}" placeholder="${escape(placeholder)}" autocomplete="off">`;
+    const numericLimit = numericLimits(schema);
+    const maxLength = schema.type === 'string' ? schema.maxLength : numericLimit?.maxLength;
+    return `<input ${attributes} type="${inputType(schema)}" ${schema.format === 'date' ? `min="0001-01-01" max="${schema.uiNoFuture ? today() : '9999-12-31'}"` : schema.format === 'date-time' ? 'step="0.001" min="0001-01-01T00:00" max="9999-12-31T23:59"' : ''} ${['integer', 'number'].includes(schema.type) ? `inputmode="${schema.type === 'integer' ? 'numeric' : 'decimal'}"` : ''} ${maxLength !== undefined ? `maxlength="${maxLength}"` : ''} value="${escape(value)}" placeholder="${escape(placeholder)}" autocomplete="off">`;
 }
 
 function fieldHTML(def, value = '') {
@@ -96,6 +98,37 @@ function bindForm(form, definitions) {
     for (const def of definitions) {
         const input = form.elements.namedItem(def.path);
         if (!input) continue;
+        const limits = numericLimits(def.schema);
+        if (limits) {
+            input.addEventListener('beforeinput', event => {
+                if (!event.cancelable || event.inputType.startsWith('delete')) return;
+                const inserted = event.data ?? event.dataTransfer?.getData('text/plain');
+                if (inserted == null) return;
+                const start = input.selectionStart ?? input.value.length;
+                const end = input.selectionEnd ?? start;
+                const candidate = input.value.slice(0, start) + inserted + input.value.slice(end);
+                let error;
+                if (candidate.length > limits.maxLength) {
+                    error = 'Число слишком длинное.';
+                } else if (/^-?0\d/.test(candidate)) {
+                    error = 'Уберите ведущий ноль.';
+                } else {
+                    const fraction = candidate.match(/\.(\d*)$/)?.[1];
+                    if (fraction !== undefined && fraction.length > limits.maxFractionDigits) {
+                        error = `Допустимо не более ${limits.maxFractionDigits} знаков после точки.`;
+                    } else if (/^-?(?:0|[1-9]\d*)(?:\.\d+)?$/.test(candidate) &&
+                            def.schema.type === 'number' && !numericTextPreservesPrecision(candidate, def.schema)) {
+                        error = 'Число потеряет точность. Уменьшите количество цифр.';
+                    }
+                }
+                if (error) {
+                    event.preventDefault();
+                    input.setAttribute('aria-invalid', 'true');
+                    const hint = input.closest('label')?.querySelector('.field-error');
+                    if (hint) hint.textContent = error;
+                }
+            });
+        }
         input.addEventListener('input', () => {
             const hint = input.closest('label')?.querySelector('.field-error');
             try {
@@ -272,12 +305,14 @@ function renderQuickInput() {
     const field = $('#quick-search').elements['quick-field'].value;
     const col = columns().find(x => x[0] === field);
     const schema = searchFieldSchema(col[1][0]);
-    $('#quick-input').innerHTML = inputHTML({
+    const def = {
         path: 'quick-value',
         schema,
         required: true,
         label: 'Значение для поиска'
-    });
+    };
+    $('#quick-input').innerHTML = inputHTML(def);
+    bindForm($('#quick-search'), [def]);
 }
 
 function attachSorting() {

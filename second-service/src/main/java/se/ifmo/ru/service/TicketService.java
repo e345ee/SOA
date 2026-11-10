@@ -95,6 +95,9 @@ public class TicketService {
         return personService.savePersonEntity(personDto.toCreate());
     }
 
+    public Long countByPerson(Long personId) {
+        return ticketStatisticsService.countByPerson(personId);
+    }
     public Double getSum(){
         return ticketStatisticsService.getSum();
     }

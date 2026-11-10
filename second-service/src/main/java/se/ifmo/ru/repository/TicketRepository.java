@@ -8,9 +8,10 @@ import jakarta.data.repository.Delete;
 import jakarta.data.repository.Repository;
 import jakarta.persistence.criteria.*;
 import org.hibernate.StatelessSession;
-import se.ifmo.ru.model.Ticket;
 import se.ifmo.ru.dto.request.TicketSearchFilterDto;
-import se.ifmo.ru.utils.TicketCriteriaSearch;
+import se.ifmo.ru.model.Ticket;
+import se.ifmo.ru.repository.criteria.CriteriaPredicates;
+import se.ifmo.ru.repository.criteria.TicketCriteriaSearch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,6 +79,7 @@ public interface    TicketRepository extends CrudRepository<Ticket, Long> {
                 .setParameter("eventId", eventId)
                 .executeUpdate();
     }
+
 
     default Long countByPerson(Long personId) {
         StatelessSession session = session();

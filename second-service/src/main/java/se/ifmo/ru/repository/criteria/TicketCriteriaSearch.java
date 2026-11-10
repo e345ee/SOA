@@ -1,4 +1,4 @@
-package se.ifmo.ru.utils;
+package se.ifmo.ru.repository.criteria;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
@@ -14,8 +14,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static se.ifmo.ru.utils.CriteriaPredicates.add;
-import static se.ifmo.ru.utils.CriteriaPredicates.contains;
+import static se.ifmo.ru.repository.criteria.CriteriaPredicates.add;
+import static se.ifmo.ru.repository.criteria.CriteriaPredicates.contains;
 
 public final class TicketCriteriaSearch {
     private TicketCriteriaSearch() {}
