@@ -110,6 +110,8 @@ function bindForm(form, definitions) {
                 let error;
                 if (candidate.length > limits.maxLength) {
                     error = 'Число слишком длинное.';
+                } else if (/^-?0\d/.test(candidate)) {
+                    error = 'Уберите ведущий ноль.';
                 } else {
                     const fraction = candidate.match(/\.(\d*)$/)?.[1];
                     if (fraction !== undefined && fraction.length > limits.maxFractionDigits) {
@@ -303,12 +305,14 @@ function renderQuickInput() {
     const field = $('#quick-search').elements['quick-field'].value;
     const col = columns().find(x => x[0] === field);
     const schema = searchFieldSchema(col[1][0]);
-    $('#quick-input').innerHTML = inputHTML({
+    const def = {
         path: 'quick-value',
         schema,
         required: true,
         label: 'Значение для поиска'
-    });
+    };
+    $('#quick-input').innerHTML = inputHTML(def);
+    bindForm($('#quick-search'), [def]);
 }
 
 function attachSorting() {
